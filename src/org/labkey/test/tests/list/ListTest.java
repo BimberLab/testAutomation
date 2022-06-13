@@ -48,18 +48,18 @@ import org.labkey.test.pages.ImportDataPage;
 import org.labkey.test.pages.list.EditListDefinitionPage;
 import org.labkey.test.params.FieldDefinition;
 import org.labkey.test.params.FieldDefinition.LookupInfo;
+import org.labkey.test.params.list.IntListDefinition;
+import org.labkey.test.params.list.ListDefinition;
 import org.labkey.test.tests.AuditLogTest;
 import org.labkey.test.util.AbstractDataRegionExportOrSignHelper.ColumnHeaderType;
 import org.labkey.test.util.DataRegionExportHelper;
 import org.labkey.test.util.DataRegionTable;
 import org.labkey.test.util.EscapeUtil;
 import org.labkey.test.util.ListHelper;
-import org.labkey.test.util.ListHelper.ListColumn;
 import org.labkey.test.util.ListHelper.ListColumnType;
 import org.labkey.test.util.LogMethod;
 import org.labkey.test.util.Maps;
 import org.labkey.test.util.PortalHelper;
-import org.labkey.test.util.TestDataGenerator;
 import org.labkey.test.util.TextSearcher;
 import org.labkey.test.util.search.SearchAdminAPIHelper;
 import org.openqa.selenium.By;
@@ -466,7 +466,7 @@ public class ListTest extends BaseWebDriverTest
     }
 
     @Test
-    public void testCustomViews()
+    public void testCustomViews() throws IOException, CommandException
     {
         goToProjectHome();
         setUpList(getProjectName());
@@ -750,19 +750,19 @@ public class ListTest extends BaseWebDriverTest
                 new FieldDefinition("dewey", FieldDefinition.ColumnType.Decimal)
         );
         String listName = "remoteApiListTestAddColumn";
-        FieldDefinition.LookupInfo info = new FieldDefinition.LookupInfo(getProjectName(), "lists", listName);
-        TestDataGenerator dgen = new TestDataGenerator(info)
-                .withColumns(cols);
-        DomainResponse createResponse = dgen.createList(createDefaultConnection(), "key");
-        Domain listDomain = createResponse.getDomain();
-        List<PropertyDescriptor> listFields = createResponse.getDomain().getFields();
+        ListDefinition listDef = new IntListDefinition(listName, "key")
+                .setFields(cols);
+        Domain listDomain = listDef.getCreateCommand()
+                .execute(createDefaultConnection(), getProjectName())
+                .getDomain();
+        List<PropertyDescriptor> listFields = new ArrayList<>(listDomain.getFields());
         listFields.add(new FieldDefinition("volume", FieldDefinition.ColumnType.Decimal));
         listDomain.setFields(listFields);
 
         // now save with an extra field
-        SaveDomainCommand saveCmd = new SaveDomainCommand(info.getSchema(), info.getTable());
+        SaveDomainCommand saveCmd = new SaveDomainCommand(listDomain.getDomainId());
         saveCmd.setDomainDesign(listDomain);
-        DomainResponse saveResponse = saveCmd.execute(createDefaultConnection(), info.getFolder());
+        DomainResponse saveResponse = saveCmd.execute(createDefaultConnection(), getProjectName());
 
         // now verify
         assertEquals(listFields.size(), saveResponse.getDomain().getFields().size());
@@ -785,18 +785,18 @@ public class ListTest extends BaseWebDriverTest
                 new FieldDefinition("removeMe", FieldDefinition.ColumnType.Decimal)
         );
         String listName = "remoteApiListTestRemoveColumn";
-        FieldDefinition.LookupInfo info = new FieldDefinition.LookupInfo(getProjectName(), "lists", listName);
-        TestDataGenerator dgen = new TestDataGenerator(info)
-                .withColumns(cols);
-        DomainResponse createResponse = dgen.createList(createDefaultConnection(), "key");
-        Domain listDomain = createResponse.getDomain();
-        List<PropertyDescriptor> listFields = createResponse.getDomain().getFields();
+        Domain listDomain = new IntListDefinition(listName, "key")
+                .setFields(cols)
+                .getCreateCommand()
+                .execute(createDefaultConnection(), getProjectName())
+                .getDomain();
+        List<PropertyDescriptor> listFields = listDomain.getFields();
         listFields.removeIf(a-> a.getName().equals("removeMe"));
         listDomain.setFields(listFields);
 
-        SaveDomainCommand saveCmd = new SaveDomainCommand(info.getSchema(), info.getTable());
+        SaveDomainCommand saveCmd = new SaveDomainCommand(listDomain.getDomainId());
         saveCmd.setDomainDesign(listDomain);
-        DomainResponse saveResponse = saveCmd.execute(createDefaultConnection(), info.getFolder());
+        DomainResponse saveResponse = saveCmd.execute(createDefaultConnection(), getProjectName());
 
         checker().verifyFalse("'removeMe' field was not deleted.",
                 saveResponse.getDomain().getFields().stream()
@@ -813,16 +813,16 @@ public class ListTest extends BaseWebDriverTest
                 new FieldDefinition("dewey", FieldDefinition.ColumnType.Decimal)
         );
         String listName = "remoteAPIBeforeRename";
-        FieldDefinition.LookupInfo info = new FieldDefinition.LookupInfo(getProjectName(), "lists", listName);
-        TestDataGenerator dgen = new TestDataGenerator(info)
-                .withColumns(cols);
-        DomainResponse createResponse = dgen.createList(createDefaultConnection(), "key");
-        Domain listDomain = createResponse.getDomain();
+        Domain listDomain = new IntListDefinition(listName, "key")
+                .setFields(cols)
+                .getCreateCommand()
+                .execute(createDefaultConnection(), getProjectName())
+                .getDomain();
         listDomain.setName("remoteAPIAfterRename");
 
         SaveDomainCommand saveCmd = new SaveDomainCommand(listDomain.getDomainId());
         saveCmd.setDomainDesign(listDomain);
-        DomainResponse saveResponse = saveCmd.execute(createDefaultConnection(), info.getFolder());
+        DomainResponse saveResponse = saveCmd.execute(createDefaultConnection(), getProjectName());
 
         assertEquals("remoteAPIAfterRename", saveResponse.getDomain().getName());
     }
@@ -837,7 +837,7 @@ public class ListTest extends BaseWebDriverTest
         preconditions:  ListVerifyProject
     */
     @Test
-    public void listSelfJoinTest()
+    public void listSelfJoinTest() throws Exception
     {
         final String listName = "listSelfJoin" + TRICKY_CHARACTERS;
         final String dummyBase = "dummyCol";
@@ -855,7 +855,10 @@ public class ListTest extends BaseWebDriverTest
         FieldDefinition lookupCol = new FieldDefinition(lookupField,
                 new FieldDefinition.LookupInfo(null, lookupSchema, lookupTable).setTableType(FieldDefinition.ColumnType.Integer));
         // create the list
-        _listHelper.createList(PROJECT_VERIFY, listName, ListColumnType.AutoInteger, keyCol, columns);
+        new IntListDefinition(listName, keyCol)
+                .setFields(Arrays.asList(columns))
+                .create(createDefaultConnection(), PROJECT_VERIFY);
+        goToProjectHome(PROJECT_VERIFY);
         // now add the lookup column (which references the new table)
         _listHelper.goToEditDesign(listName)
                 .addField(lookupCol)
@@ -874,19 +877,20 @@ public class ListTest extends BaseWebDriverTest
         clickButton("Edit");
         assertTextPresent("dummy one");
         clickButton("Cancel");
-        clickAndWait(regionTable.updateLink(0));
+        regionTable.clickEditRow(0);
         assertTextPresent("dummy one");
         clickButton("Cancel");
     }
 
     String crossContainerLookupList = "CCLL";
     @LogMethod
-    private void crossContainerLookupTest()
+    private void crossContainerLookupTest() throws IOException, CommandException
     {
         goToProjectHome(PROJECT_OTHER);
         //create list with look up A
         String lookupColumn = "lookup";
-        _listHelper.createList(PROJECT_OTHER, crossContainerLookupList, ListColumnType.AutoInteger, "Key",  col(PROJECT_VERIFY, lookupColumn, ColumnType.Integer, "A" ));
+        FieldDefinition field = col(PROJECT_VERIFY, lookupColumn, ColumnType.Integer, "A");
+        new IntListDefinition(crossContainerLookupList, "Key").addField(field).create(createDefaultConnection(), PROJECT_OTHER);
         _listHelper.goToList(crossContainerLookupList);
         _listHelper.clickImportData();
         setListImportAsTestDataField(lookupColumn + "\n1");
@@ -1115,13 +1119,15 @@ public class ListTest extends BaseWebDriverTest
     }
 
     @Test
-    public void doRenameFieldsTest()
+    public void doRenameFieldsTest() throws Exception
     {
-        log("8329: Test that renaming a field then creating a new field with the old name doesn't result in awful things");
+        log("Issue 8329: Test that renaming a field then creating a new field with the old name doesn't result in awful things");
         String listName = "new";
         String origFieldName = "BarBar";
         String newFieldName = "FooFoo";
-        _listHelper.createList(PROJECT_VERIFY, listName, ListColumnType.AutoInteger, "key", new ListColumn(origFieldName, origFieldName, ListColumnType.String, "first column"));
+        new IntListDefinition(listName, "key")
+                .addField(new FieldDefinition(origFieldName, ColumnType.String).setLabel(origFieldName).setDescription("first column"))
+                .create(createDefaultConnection(), PROJECT_VERIFY);
 
         EditListDefinitionPage listDefinitionPage = _listHelper.goToEditDesign(listName);
         listDefinitionPage.getFieldsPanel()
@@ -1134,7 +1140,7 @@ public class ListTest extends BaseWebDriverTest
         assertTextNotPresent(origFieldName);
 
         listDefinitionPage = _listHelper.goToEditDesign(listName);
-        ListColumn newCol = new ListColumn(origFieldName, origFieldName, ListColumnType.String, "second column");
+        FieldDefinition newCol = new FieldDefinition(origFieldName, ColumnType.String).setLabel(origFieldName).setDescription("second column");
         listDefinitionPage.addField(newCol);
         listDefinitionPage.clickSave();
 
@@ -1150,15 +1156,17 @@ public class ListTest extends BaseWebDriverTest
         String limitedPhiColumn = "LimitedPhiColumn";
         String phiColumn = "PhiColumn";
         String restrictedPhiColumn = "RestrictedPhiColumn";
-        _listHelper.createList(PROJECT_VERIFY, listName, ListColumnType.AutoInteger, "key",
-                new FieldDefinition("FileName", ColumnType.String).setLabel("FileName").setDescription("name of the file"),
-                new FieldDefinition("FileExtension", ColumnType.String).setLabel("ext").setDescription("the file extension"),
-                new FieldDefinition(notPhiColumn, ColumnType.Attachment).setLabel("NotPhiFile").setDescription("the file itself"),
-                new FieldDefinition(limitedPhiColumn, ColumnType.Attachment).setLabel("LimitedPhiFile").setDescription("the file itself"),
-                new FieldDefinition(phiColumn, ColumnType.Attachment).setLabel("PhiFile").setDescription("the file itself"),
-                new FieldDefinition(restrictedPhiColumn, ColumnType.Attachment).setLabel("RestrictedFile").setDescription("the file itself"));
+        new IntListDefinition(listName, "key")
+                .setFields(List.of(
+                        new FieldDefinition("FileName", ColumnType.String).setLabel("FileName").setDescription("name of the file"),
+                        new FieldDefinition("FileExtension", ColumnType.String).setLabel("ext").setDescription("the file extension"),
+                        new FieldDefinition(notPhiColumn, ColumnType.Attachment).setLabel("NotPhiFile").setDescription("the file itself"),
+                        new FieldDefinition(limitedPhiColumn, ColumnType.Attachment).setLabel("LimitedPhiFile").setDescription("the file itself"),
+                        new FieldDefinition(phiColumn, ColumnType.Attachment).setLabel("PhiFile").setDescription("the file itself"),
+                        new FieldDefinition(restrictedPhiColumn, ColumnType.Attachment).setLabel("RestrictedFile").setDescription("the file itself")))
+                .create(createDefaultConnection(), PROJECT_VERIFY);
 
-
+        // Use UI until some other place tests configuring PHI via UI
         // set phi levels
         EditListDefinitionPage listDefinitionPage = _listHelper.goToEditDesign(listName);
         listDefinitionPage.setColumnPhiLevel("NotPhiColumn", FieldDefinition.PhiSelectType.NotPHI);
@@ -1210,7 +1218,7 @@ public class ListTest extends BaseWebDriverTest
     }
 
     @Test
-    public void testAttachmentSearch()
+    public void testAttachmentSearch() throws Exception
     {
         final String listName = "Attachment Search List";
         final String path = TestFileUtils.getSampleData("lists/searchData.tsv").getAbsolutePath();
@@ -1224,9 +1232,11 @@ public class ListTest extends BaseWebDriverTest
         goToProjectHome();
 
         // create list with an attachment column
-        _listHelper.createList(getProjectName(), listName, ListColumnType.AutoInteger, "id",
-                col(descriptionCol, ColumnType.String),
-                col(attachmentCol, ColumnType.Attachment));
+        new IntListDefinition(listName, "id")
+                .setFields(List.of(
+                        col(descriptionCol, ColumnType.String),
+                        col(attachmentCol, ColumnType.Attachment)))
+                .create(createDefaultConnection(), getProjectName());
         // index for entire list as single document and index on attachment column
         _listHelper.goToEditDesign(listName)
                 .openAdvancedListSettings()
@@ -1251,7 +1261,7 @@ public class ListTest extends BaseWebDriverTest
     }
 
     @Test
-    public void testAttachmentColumnDeletion()
+    public void testAttachmentColumnDeletion() throws Exception
     {
         final String listName = "Attachment Column Delete List";
         final String path = TestFileUtils.getSampleData("lists/searchData.tsv").getAbsolutePath();
@@ -1265,9 +1275,11 @@ public class ListTest extends BaseWebDriverTest
         goToProjectHome();
 
         // create list with an attachment column
-        _listHelper.createList(getProjectName(), listName, ListColumnType.AutoInteger, "id",
-                               col(descriptionCol, ColumnType.String),
-                               col(attachmentCol, ColumnType.Attachment));
+        new IntListDefinition(listName, "id")
+                .setFields(List.of(
+                        col(descriptionCol, ColumnType.String),
+                        col(attachmentCol, ColumnType.Attachment)))
+                .create(createDefaultConnection(), getProjectName());
         // index on attachment column
         EditListDefinitionPage editListDefinitionPage = _listHelper.goToEditDesign(listName);
         editListDefinitionPage.openAdvancedListSettings()

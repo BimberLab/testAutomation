@@ -22,7 +22,6 @@ import org.junit.experimental.categories.Category;
 import org.labkey.remoteapi.CommandException;
 import org.labkey.remoteapi.Connection;
 import org.labkey.remoteapi.query.DeleteRowsCommand;
-import org.labkey.remoteapi.query.InsertRowsCommand;
 import org.labkey.remoteapi.query.SaveRowsResponse;
 import org.labkey.remoteapi.query.SelectRowsCommand;
 import org.labkey.remoteapi.query.SelectRowsResponse;
@@ -38,13 +37,15 @@ import org.labkey.test.pages.FolderManagementFolderTree;
 import org.labkey.test.pages.admin.FolderManagementPage;
 import org.labkey.test.pages.admin.ReorderFoldersPage;
 import org.labkey.test.pages.list.BeginPage;
+import org.labkey.test.params.FieldDefinition;
+import org.labkey.test.params.list.IntListDefinition;
 import org.labkey.test.util.DataRegionTable;
 import org.labkey.test.util.Ext4Helper;
-import org.labkey.test.util.ListHelper;
 import org.labkey.test.util.LogMethod;
 import org.labkey.test.util.LoggedParam;
 import org.labkey.test.util.PasswordUtil;
 import org.labkey.test.util.PortalHelper;
+import org.labkey.test.util.TestDataGenerator;
 import org.labkey.test.util.WorkbookHelper;
 import org.openqa.selenium.WebElement;
 
@@ -57,6 +58,7 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.labkey.test.params.FieldDefinition.ColumnType;
 
 @Category({Daily.class, Hosting.class})
 @BaseWebDriverTest.ClassTimeout(minutes = 25 )
@@ -273,16 +275,13 @@ public class FolderTest extends BaseWebDriverTest
 
     private void createListWithData(String subfolder) throws Exception
     {
-        _listHelper.createList(getProjectName() + "/" + subfolder, "List1", ListHelper.ListColumnType.AutoInteger, "RowId", new ListHelper.ListColumn("Col1", "ColLabel", ListHelper.ListColumnType.String));
+        Connection cn = createDefaultConnection();
+        TestDataGenerator dgen = new IntListDefinition("List1", "RowId")
+                .addField(new FieldDefinition("Col1", ColumnType.String).setLabel("ColLabel"))
+                .create(cn, getProjectName() + "/" + subfolder);
 
-        InsertRowsCommand ir = new InsertRowsCommand("lists", "List1");
-        Map<String, Object> row1 = new HashMap<>();
-        row1.put("Col1", 1);
-
-        ir.addRow(row1);
-
-        Connection cn = new Connection(WebTestHelper.getBaseURL(), PasswordUtil.getUsername(), PasswordUtil.getPassword());
-        ir.execute(cn, getProjectName() + "/" + subfolder);
+        dgen.addCustomRow(Map.of("Col1", 1));
+        dgen.insertRows(cn);
     }
 
     @Test
@@ -292,7 +291,6 @@ public class FolderTest extends BaseWebDriverTest
         createListWithData("NoChildren");
 
         clickProject(getProjectName());
-        ensureAdminMode();
 
         //Delete a folder without children, expect only one-step confirmation needed
         goToFolderManagement();
@@ -316,7 +314,6 @@ public class FolderTest extends BaseWebDriverTest
         _containerHelper.createSubfolder(getProjectName() + "/HasChildren", "Subfolder");
 
         clickProject(getProjectName());
-        ensureAdminMode();
 
         //Delete a folder with children, expect two-step confirmation needed
         goToFolderManagement();

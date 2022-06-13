@@ -17,6 +17,11 @@ import java.util.Map;
  */
 public abstract class DomainProps
 {
+    public static DomainPropsImpl forKind(String kind, String schemaName, String queryName)
+    {
+        return new DomainPropsImpl(kind, schemaName, queryName);
+    }
+
     protected abstract @NotNull Domain getDomainDesign();
     protected abstract @NotNull String getKind();
     protected abstract @NotNull Map<String, Object> getOptions();

@@ -22,13 +22,16 @@ import org.labkey.test.Locator;
 import org.labkey.test.TestFileUtils;
 import org.labkey.test.TestTimeoutException;
 import org.labkey.test.categories.Daily;
+import org.labkey.test.params.FieldDefinition;
+import org.labkey.test.params.list.IntListDefinition;
 import org.labkey.test.util.DataRegionTable;
-import org.labkey.test.util.ListHelper;
 import org.labkey.test.util.PortalHelper;
+import org.labkey.test.util.TestDataGenerator;
 import org.labkey.test.util.WikiHelper;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertTrue;
 
@@ -88,24 +91,16 @@ public class ButtonCustomizationTest extends BaseWebDriverTest
     }
 
     @Test
-    public void testSteps()
+    public void testSteps() throws Exception
     {
         _containerHelper.createProject(PROJECT_NAME, null);
 
-        ListHelper.ListColumn[] columns = new ListHelper.ListColumn[] {
-                new ListHelper.ListColumn("name", "Name", ListHelper.ListColumnType.String, "")
-        };
-
-        _listHelper.createList(PROJECT_NAME, LIST_NAME, ListHelper.ListColumnType.AutoInteger, "Key", columns);
-        goToManageLists();
-        clickAndWait(Locator.linkWithText(LIST_NAME));
-        assertButtonNotPresent(METADATA_OVERRIDE_BUTTON);
-        DataRegionTable.findDataRegion(this).clickInsertNewRow();
-        setFormElement(Locator.name("quf_name"), "Seattle");
-        clickButton("Submit");
-        DataRegionTable.findDataRegion(this).clickInsertNewRow();
-        setFormElement(Locator.name("quf_name"), "Portland");
-        clickButton("Submit");
+        TestDataGenerator dgen = new IntListDefinition(LIST_NAME, "Key")
+                .addField(new FieldDefinition("name", FieldDefinition.ColumnType.String).setLabel("Name"))
+                .create(createDefaultConnection(), PROJECT_NAME);
+        dgen.addCustomRow(Map.of("name", "Seattle"));
+        dgen.addCustomRow(Map.of("name", "Portland"));
+        dgen.insertRows();
         
         // assert custom buttons can be added to the standard set:
         beginAt("/query/" + PROJECT_NAME + "/schema.view?schemaName=lists");
@@ -122,10 +117,10 @@ public class ButtonCustomizationTest extends BaseWebDriverTest
         assertElementPresent(Locator.tagWithClass("div", "labkey-customview-message").withText("This query is not editable"));
         clickButton("Execute Query", 0);
         waitForText(WAIT_FOR_JAVASCRIPT, "Seattle");
-        assertButtonPresent(METADATA_OVERRIDE_BUTTON);
+        assertElementPresent(Locator.lkButton(METADATA_OVERRIDE_BUTTON));
         _ext4Helper.clickExt4Tab("Source");
         clickButton("Done");
-        assertButtonPresent(METADATA_OVERRIDE_BUTTON);
+        assertElementPresent(Locator.lkButton(METADATA_OVERRIDE_BUTTON));
 
         assertElementPresent(Locator.tagWithAttribute("a", "data-original-title","Insert data"));
 
@@ -187,7 +182,7 @@ public class ButtonCustomizationTest extends BaseWebDriverTest
                 Locator.lkButton(METADATA_LINK_BUTTON).waitForElement(getDriver(), WAIT_FOR_JAVASCRIPT)
                         .getAttribute("class").contains("labkey-disabled-button"));
 
-        buttonRegion.checkCheckbox(buttonRegion.getIndexWhereDataAppears("Portland", "Name"));
+        buttonRegion.checkCheckbox(buttonRegion.getRowIndex("Name", "Portland"));
         // wait for the button to enable:
         waitForElement(Locator.lkButton(METADATA_LINK_BUTTON), 10000);
 

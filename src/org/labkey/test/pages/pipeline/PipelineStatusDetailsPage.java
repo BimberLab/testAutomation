@@ -168,13 +168,11 @@ public class PipelineStatusDetailsPage extends LabKeyPage<PipelineStatusDetailsP
         if (expectRedirect)
             log("Expecting redirect when complete");
 
-        waitForStatus("COMPLETE", wait);
+        doAndWaitForPageToLoad(() -> waitForStatus("COMPLETE", wait),
+                expectRedirect ? (wait + getDefaultWaitForPage()) : 0);
 
         if (expectRedirect)
         {
-            // The click does nothing, but we want to wait for the redirect before continuing
-            log("Process done, clicking and waiting for redirect");
-            clickAndWait(elementCache().statusText);
             log("Redirected on success as expected: " + getDriver().getCurrentUrl());
         }
 

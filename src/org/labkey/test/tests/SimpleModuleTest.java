@@ -49,6 +49,7 @@ import org.labkey.test.components.html.SiteNavBar;
 import org.labkey.test.pages.core.admin.LookAndFeelSettingsPage;
 import org.labkey.test.pages.study.DatasetDesignerPage;
 import org.labkey.test.params.FieldDefinition;
+import org.labkey.test.params.list.IntListDefinition;
 import org.labkey.test.util.DataRegionTable;
 import org.labkey.test.util.LogMethod;
 import org.labkey.test.util.LoggedParam;
@@ -1081,20 +1082,19 @@ public class SimpleModuleTest extends BaseWebDriverTest
     private void createPeopleListInFolder(String folderName) throws Exception
     {
         String containerPath = folderName.equals(getProjectName()) ? getProjectName() : getProjectName() + "/" + folderName;
-        TestDataGenerator dgen = new TestDataGenerator(new FieldDefinition.LookupInfo(containerPath, "lists", LIST_NAME))
-                .withColumns(List.of(
-                        TestDataGenerator.simpleFieldDef("Name", FieldDefinition.ColumnType.String).setDescription("Name"),
-                        TestDataGenerator.simpleFieldDef("Age", FieldDefinition.ColumnType.Integer).setDescription("Age"),
-                        TestDataGenerator.simpleFieldDef("Crazy", FieldDefinition.ColumnType.Boolean).setDescription("Crazy?")
-                ));
-        dgen.createList(createDefaultConnection(), "Key");
+        new IntListDefinition(LIST_NAME, "Key")
+                .setFields(List.of(
+                        new FieldDefinition("Name", FieldDefinition.ColumnType.String).setDescription("Name"),
+                        new FieldDefinition("Age", FieldDefinition.ColumnType.Integer).setDescription("Age"),
+                        new FieldDefinition("Crazy", FieldDefinition.ColumnType.Boolean).setDescription("Crazy?")))
+                .create(createDefaultConnection(), containerPath);
         goToManageLists();
         _listHelper.goToList(LIST_NAME);
     }
 
     private void createPeopleListInTab(String tabLabel, String containerPath) throws Exception  // todo: post-20.3, change this to go through the UI
     {
-        clickTab(tabLabel.replace(" ", ""));
+        clickTab(tabLabel);
         if (!isElementPresent(Locator.linkWithText("Lists")))
         {
             PortalHelper portalHelper = new PortalHelper(getDriver());
@@ -1104,9 +1104,9 @@ public class SimpleModuleTest extends BaseWebDriverTest
         waitAndClickAndWait(Locator.linkWithText("manage lists"));
         TestDataGenerator dgen = new TestDataGenerator(new FieldDefinition.LookupInfo(containerPath, "lists", LIST_NAME))
                 .withColumns(List.of(
-                        TestDataGenerator.simpleFieldDef("Name", FieldDefinition.ColumnType.String).setDescription("Name"),
-                        TestDataGenerator.simpleFieldDef("Age", FieldDefinition.ColumnType.Integer).setDescription("Age"),
-                        TestDataGenerator.simpleFieldDef("Crazy", FieldDefinition.ColumnType.Boolean).setDescription("Crazy?")
+                        new FieldDefinition("Name", FieldDefinition.ColumnType.String).setDescription("Name"),
+                        new FieldDefinition("Age", FieldDefinition.ColumnType.Integer).setDescription("Age"),
+                        new FieldDefinition("Crazy", FieldDefinition.ColumnType.Boolean).setDescription("Crazy?")
                 ));
         dgen.createList(createDefaultConnection(), "Key");
         refresh();

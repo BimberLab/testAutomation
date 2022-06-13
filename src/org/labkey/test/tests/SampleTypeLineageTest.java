@@ -106,9 +106,9 @@ public class SampleTypeLineageTest extends BaseWebDriverTest
         // create a sampleset with the following explicit domain columns
         TestDataGenerator dgen = new TestDataGenerator("exp.materials", "implicitParentage", getCurrentContainerPath())
                 .withColumns(List.of(
-                        TestDataGenerator.simpleFieldDef("name", FieldDefinition.ColumnType.String),
-                        TestDataGenerator.simpleFieldDef("data", FieldDefinition.ColumnType.Integer),
-                        TestDataGenerator.simpleFieldDef("stringData", FieldDefinition.ColumnType.String)
+                        new FieldDefinition("name", FieldDefinition.ColumnType.String),
+                        new FieldDefinition("data", FieldDefinition.ColumnType.Integer),
+                        new FieldDefinition("stringData", FieldDefinition.ColumnType.String)
                 ));
         dgen.createDomain(createDefaultConnection(), SAMPLE_TYPE_DOMAIN_KIND);
         dgen.addRow(List.of("A", 12, dgen.randomString(15)));
@@ -151,7 +151,7 @@ public class SampleTypeLineageTest extends BaseWebDriverTest
         assertEquals(5, nodeChildren.size());
 
         // now delete row B
-        dgen.deleteRows(createDefaultConnection(), List.of(rowB));
+        dgen.getQueryHelper(createDefaultConnection()).deleteRows(List.of(rowB));
 
         // get the lineage graph
         LineageCommand parents = new LineageCommand.Builder(rowH.get("lsid").toString())
@@ -170,7 +170,7 @@ public class SampleTypeLineageTest extends BaseWebDriverTest
         assertEquals( "Issue 37466: Expect rowH to still derive from A and C",2, nodeParents.size());
 
         // only delete on success
-        dgen.deleteDomain(createDefaultConnection());
+        dgen.getQueryHelper(createDefaultConnection()).deleteDomain();
     }
 
     @Test
@@ -385,7 +385,7 @@ public class SampleTypeLineageTest extends BaseWebDriverTest
 
         log("Check that the imported data is as expected.");
         DataRegionTable dataRegionTable = new DataRegionTable("Material", this);
-        int row = dataRegionTable.getIndexWhereDataAppears(testSample, "Name");
+        int row = dataRegionTable.getRowIndex(testSample, "Name");
         String data = dataRegionTable.getDataAsText(row, columnName);
         checker().verifyEquals("Something doesn't look right. Value for column not as expected.",
                 testData, data);
@@ -408,7 +408,7 @@ public class SampleTypeLineageTest extends BaseWebDriverTest
 
         log("Check that the updated data is shown.");
         dataRegionTable = new DataRegionTable("Material", this);
-        row = dataRegionTable.getIndexWhereDataAppears(testSample, "Name");
+        row = dataRegionTable.getRowIndex(testSample, "Name");
         data = dataRegionTable.getDataAsText(row, columnName);
         checker().verifyEquals("Value for column not updated as expected.",
                 updatedTestData, data);
@@ -654,7 +654,7 @@ public class SampleTypeLineageTest extends BaseWebDriverTest
 
         for(String parent : parents)
         {
-            int index = drt.getIndexWhereDataAppears(parent, "Name");
+            int index = drt.getRowIndex(parent, "Name");
             drt.checkCheckbox(index);
         }
 
@@ -766,8 +766,8 @@ public class SampleTypeLineageTest extends BaseWebDriverTest
         goToProjectHome();
         TestDataGenerator dgen = new TestDataGenerator("exp.materials", "badLineageTest", getCurrentContainerPath())
                 .withColumns(List.of(
-                        TestDataGenerator.simpleFieldDef("name", FieldDefinition.ColumnType.String),
-                        TestDataGenerator.simpleFieldDef("data", FieldDefinition.ColumnType.Integer)
+                        new FieldDefinition("name", FieldDefinition.ColumnType.String),
+                        new FieldDefinition("data", FieldDefinition.ColumnType.Integer)
                 ));
         dgen.createDomain(createDefaultConnection(), SAMPLE_TYPE_DOMAIN_KIND);
         dgen.addCustomRow(Map.of("name", "A", "data", 12));     // no parent
@@ -795,8 +795,8 @@ public class SampleTypeLineageTest extends BaseWebDriverTest
         goToProjectHome();
         TestDataGenerator dgen = new TestDataGenerator("exp.materials", "badParentLineage", getCurrentContainerPath())
                 .withColumns(List.of(
-                        TestDataGenerator.simpleFieldDef("name", FieldDefinition.ColumnType.String),
-                        TestDataGenerator.simpleFieldDef("data", FieldDefinition.ColumnType.Integer)
+                        new FieldDefinition("name", FieldDefinition.ColumnType.String),
+                        new FieldDefinition("data", FieldDefinition.ColumnType.Integer)
                 ));
         dgen.createDomain(createDefaultConnection(), SAMPLE_TYPE_DOMAIN_KIND);
         dgen.addCustomRow(Map.of("name", "A", "data", 12));     // no parent
@@ -815,7 +815,7 @@ public class SampleTypeLineageTest extends BaseWebDriverTest
         }
 
         // clean up on success
-        dgen.deleteDomain(createDefaultConnection());
+        dgen.getQueryHelper(createDefaultConnection()).deleteDomain();
     }
 
     /**
@@ -833,9 +833,9 @@ public class SampleTypeLineageTest extends BaseWebDriverTest
         TestDataGenerator dgen = new TestDataGenerator("exp.materials", "Family",
                 getCurrentContainerPath())
                 .withColumns(List.of(
-                        TestDataGenerator.simpleFieldDef("name", FieldDefinition.ColumnType.String),
-                        TestDataGenerator.simpleFieldDef("age", FieldDefinition.ColumnType.Integer),
-                        TestDataGenerator.simpleFieldDef("height", FieldDefinition.ColumnType.Integer)
+                        new FieldDefinition("name", FieldDefinition.ColumnType.String),
+                        new FieldDefinition("age", FieldDefinition.ColumnType.Integer),
+                        new FieldDefinition("height", FieldDefinition.ColumnType.Integer)
                 ));
         dgen.createDomain(createDefaultConnection(), SAMPLE_TYPE_DOMAIN_KIND);
         dgen.addRow(List.of("A", 56, 60));
@@ -873,9 +873,9 @@ public class SampleTypeLineageTest extends BaseWebDriverTest
                 1, lineageResponse.getSeed().getParents().size());
 
         // delete rows A, B
-        dgen.deleteRows(createDefaultConnection(), rowsToDelete);
-        SelectRowsResponse selectResponse = dgen.getRowsFromServer(createDefaultConnection(),
-                List.of("rowId", "lsid", "name", "parent", "age", "height", "MaterialInputs/Family", "Inputs/First"));
+        dgen.getQueryHelper(createDefaultConnection()).deleteRows(rowsToDelete);
+        SelectRowsResponse selectResponse = dgen.getQueryHelper(createDefaultConnection())
+                .selectRows(List.of("rowId", "lsid", "name", "parent", "age", "height", "MaterialInputs/Family", "Inputs/First"));
         List<Map<String, Object>> remainingRows = selectResponse.getRows();
 
         // now make sure materialInputs derivations don't persist references to deleted records
@@ -889,7 +889,7 @@ public class SampleTypeLineageTest extends BaseWebDriverTest
         assertEquals("don't expect MaterialInput/tablename columns to persist records that have been deleted",
                 0, linResponse.getSeed().getParents().size());
 
-        dgen.deleteDomain(createDefaultConnection());
+        dgen.getQueryHelper(createDefaultConnection()).deleteDomain();
     }
 
     @Test
@@ -1023,7 +1023,7 @@ public class SampleTypeLineageTest extends BaseWebDriverTest
         sampleHelper.createSampleType(new SampleTypeDefinition(SAMPLE_TYPE_NAME), sampleData);
         DataRegionTable drtSamples = sampleHelper.getSamplesDataRegionTable();
         log("Derive one sample from another");
-        drtSamples.checkCheckbox(drtSamples.getIndexWhereDataAppears(parentSampleNames.get(0), "Name"));
+        drtSamples.checkCheckbox(drtSamples.getRowIndex(parentSampleNames.get(0), "Name"));
         clickButton("Derive Samples");
         waitAndClickAndWait(Locator.lkButton("Next"));
         String childName = parentSampleNames.get(0) + ".1";
@@ -1039,8 +1039,8 @@ public class SampleTypeLineageTest extends BaseWebDriverTest
 
         log("Derive a sample with two parents");
         clickAndWait(Locator.linkContainingText(SAMPLE_TYPE_NAME));
-        drtSamples.checkCheckbox(drtSamples.getIndexWhereDataAppears(parentSampleNames.get(1), "Name"));
-        drtSamples.checkCheckbox(drtSamples.getIndexWhereDataAppears(childName, "Name"));
+        drtSamples.checkCheckbox(drtSamples.getRowIndex("Name", parentSampleNames.get(1)));
+        drtSamples.checkCheckbox(drtSamples.getRowIndex("Name", childName));
         clickButton("Derive Samples");
         waitAndClickAndWait(Locator.lkButton("Next"));
         String twoParentChildName = parentSampleNames.get(1) + "+" + childName + ".1";
@@ -1050,14 +1050,14 @@ public class SampleTypeLineageTest extends BaseWebDriverTest
         clickAndWait(Locator.linkContainingText(SAMPLE_TYPE_NAME));
 
         log("Try to delete parent sample");
-        drtSamples.checkCheckbox(drtSamples.getIndexWhereDataAppears(parentSampleNames.get(0), "Name"));
+        drtSamples.checkCheckbox(drtSamples.getRowIndex("Name", parentSampleNames.get(0)));
         drtSamples.clickHeaderButton("Delete");
         Window.Window(getDriver()).withTitle("No samples can be deleted").waitFor()
                 .clickButton("Dismiss", true);
 
         log("Try to delete multiple parent samples");
-        drtSamples.checkCheckbox(drtSamples.getIndexWhereDataAppears(parentSampleNames.get(1), "Name"));
-        drtSamples.checkCheckbox(drtSamples.getIndexWhereDataAppears(childName, "Name"));
+        drtSamples.checkCheckbox(drtSamples.getRowIndex(parentSampleNames.get(1), "Name"));
+        drtSamples.checkCheckbox(drtSamples.getRowIndex(childName, "Name"));
         drtSamples.clickHeaderButton("Delete");
         Window.Window(getDriver()).withTitle("No samples can be deleted").waitFor()
                 .clickButton("Dismiss", true);
@@ -1066,21 +1066,21 @@ public class SampleTypeLineageTest extends BaseWebDriverTest
         assertEquals("No selection should remain", 0, drtSamples.getSelectedCount());
 
         log("Try to delete parent and child");
-        drtSamples.checkCheckbox(drtSamples.getIndexWhereDataAppears(parentSampleNames.get(1), "Name"));
-        drtSamples.checkCheckbox(drtSamples.getIndexWhereDataAppears(twoParentChildName, "Name"));
+        drtSamples.checkCheckbox(drtSamples.getRowIndex(parentSampleNames.get(1), "Name"));
+        drtSamples.checkCheckbox(drtSamples.getRowIndex(twoParentChildName, "Name"));
         assertEquals("Parent and child should be checked", 2, drtSamples.getCheckedCount());
         assertEquals("Parent and child should be checked", 2, drtSamples.getSelectedCount());
 
         sampleHelper.deleteSamples(drtSamples, "Permanently delete 1 sample");
-        assertEquals("Deleted sample " + twoParentChildName + " still appears in grid", -1, drtSamples.getIndexWhereDataAppears(twoParentChildName, "Name"));
-        assertTrue("Parent sample " + parentSampleNames.get(1) + " does not appears in grid", drtSamples.getIndexWhereDataAppears(parentSampleNames.get(1), "Name") > -1);
+        assertEquals("Deleted sample " + twoParentChildName + " still appears in grid", -1, drtSamples.getRowIndex(twoParentChildName, "Name"));
+        assertTrue("Parent sample " + parentSampleNames.get(1) + " does not appears in grid", drtSamples.getRowIndex(parentSampleNames.get(1), "Name") > -1);
         assertEquals("Only parent sample should be checked", 1, drtSamples.getCheckedCount());
         assertEquals("Only parent sample should be checked", 1, drtSamples.getSelectedCount());
 
         log("Now that the child is gone, try to delete the parent");
         sampleHelper.deleteSamples(drtSamples, "Permanently delete 1 sample");
 
-        assertEquals("Deleted sample " + parentSampleNames.get(1) + " still appears in grid", -1, drtSamples.getIndexWhereDataAppears(parentSampleNames.get(1), "Name"));
+        assertEquals("Deleted sample " + parentSampleNames.get(1) + " still appears in grid", -1, drtSamples.getRowIndex(parentSampleNames.get(1), "Name"));
         assertEquals("No selection should remain", 0, drtSamples.getCheckedCount());
 
         log("Now try to delete what's left, in several hitches");

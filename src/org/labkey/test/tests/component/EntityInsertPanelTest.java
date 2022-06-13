@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 @Category({Daily.class})
 public class EntityInsertPanelTest extends BaseWebDriverTest
@@ -71,7 +71,7 @@ public class EntityInsertPanelTest extends BaseWebDriverTest
                 .getEditableGrid().pasteFromCell(0, "Name *", pasteText);
         WebElement success = clickFinishExpectingSuccess("Finish Creating 3 Samples");
         assertThat(success.getText(), is("Created 3 samples in sample type 'insert_from_edit_grid'."));
-        List<Map<String, Object>> insertedRows = dgen.getRowsFromServer(createDefaultConnection()).getRows();
+        List<Map<String, Object>> insertedRows = dgen.getQueryHelper(createDefaultConnection()).selectRows().getRows();
         assertThat(insertedRows.size(), is(3));
         Map<String, Object> ed_row = insertedRows.stream().filter(a-> a.get("name").equals("ed")).findFirst().get();
         assertThat(ed_row.get("intColumn"), is(2));
@@ -89,7 +89,7 @@ public class EntityInsertPanelTest extends BaseWebDriverTest
         assertThat(ted_row.get("stringColumn"), is("strangefellow"));
         assertThat(ted_row.get("boolColumn"), is(true));
 
-        dgen.deleteDomain(createDefaultConnection());
+        dgen.getQueryHelper(createDefaultConnection()).deleteDomain();
     }
 
     @Test

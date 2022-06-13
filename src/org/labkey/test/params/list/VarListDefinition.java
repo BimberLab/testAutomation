@@ -14,6 +14,12 @@ public class VarListDefinition extends ListDefinition
         super(name);
     }
 
+    public VarListDefinition(String name, String keyName)
+    {
+        this(name);
+        setKeyName(keyName);
+    }
+
     @Override
     public ListDefinition addField(@NotNull FieldDefinition field)
     {

@@ -32,6 +32,7 @@ import org.labkey.test.pages.experiment.CreateSampleTypePage;
 import org.labkey.test.pages.experiment.UpdateSampleTypePage;
 import org.labkey.test.params.FieldDefinition;
 import org.labkey.test.params.experiment.SampleTypeDefinition;
+import org.labkey.test.params.list.IntListDefinition;
 import org.labkey.test.util.DataRegionTable;
 import org.labkey.test.util.PortalHelper;
 import org.labkey.test.util.SampleTypeHelper;
@@ -237,14 +238,14 @@ public class SampleTypeNameExpressionTest extends BaseWebDriverTest
         String nameExpSamples = "NameExpressionSamples";
 
         // begin by creating a lookupList of colors, the sampleType will reference it
-        TestDataGenerator colorsGen = new TestDataGenerator(colorsLookup)
-                .withColumns(List.of(new FieldDefinition("ColorName", FieldDefinition.ColumnType.String),
-                        new FieldDefinition("ColorCode", FieldDefinition.ColumnType.String)));
+        TestDataGenerator colorsGen = new IntListDefinition(lookupList, "Key")
+                .setFields(List.of(new FieldDefinition("ColorName", FieldDefinition.ColumnType.String),
+                        new FieldDefinition("ColorCode", FieldDefinition.ColumnType.String)))
+                .create(createDefaultConnection(), getProjectName());
         colorsGen.addCustomRow(Map.of("ColorName", "green", "ColorCode", "gr"));
         colorsGen.addCustomRow(Map.of("ColorName", "yellow", "ColorCode", "yl"));
         colorsGen.addCustomRow(Map.of("ColorName", "red", "ColorCode", "rd"));
         colorsGen.addCustomRow(Map.of("ColorName", "blue", "ColorCode", "bl"));
-        colorsGen.createList(createDefaultConnection(), "Key");
         colorsGen.insertRows();
 
         String pasteData = """
@@ -380,7 +381,7 @@ public class SampleTypeNameExpressionTest extends BaseWebDriverTest
         createPage.clickSave();
 
         log(String.format("Go to the 'overview' page for sample '%s' in sample type '%s'", PARENT_SAMPLE_01, PARENT_SAMPLE_TYPE));
-        Long sampleRowNum = SampleTypeAPIHelper.getSampleIdFromName(getProjectName(), PARENT_SAMPLE_TYPE, Arrays.asList(PARENT_SAMPLE_01)).get(PARENT_SAMPLE_01);
+        Long sampleRowNum = SampleTypeAPIHelper.getRowIdsForSamples(getProjectName(), PARENT_SAMPLE_TYPE, Arrays.asList(PARENT_SAMPLE_01)).get(PARENT_SAMPLE_01);
 
         String url = WebTestHelper.buildRelativeUrl("experiment", getCurrentContainerPath(), "showMaterial", Map.of("rowId", sampleRowNum));
         beginAt(url);

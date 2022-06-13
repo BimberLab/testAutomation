@@ -23,11 +23,11 @@ import org.labkey.test.pages.study.ManageStudyPage;
 import org.labkey.test.params.FieldDefinition;
 import org.labkey.test.params.experiment.SampleTypeDefinition;
 import org.labkey.test.util.DataRegionTable;
+import org.labkey.test.util.DomainUtils;
 import org.labkey.test.util.Ext4Helper;
 import org.labkey.test.util.PortalHelper;
 import org.labkey.test.util.SampleTypeHelper;
 import org.labkey.test.util.StudyHelper;
-import org.labkey.test.util.TestDataGenerator;
 import org.openqa.selenium.WebElement;
 
 import java.io.File;
@@ -666,14 +666,10 @@ public class SampleTypeLinkToStudyTest extends BaseWebDriverTest
     public void preTest() throws Exception
     {
         //deleting the datasets from study folders.
-        if (TestDataGenerator.doesDomainExists(DATE_BASED_STUDY, "study", "Sample type 1"))
-            TestDataGenerator.deleteDomain(DATE_BASED_STUDY, "study", "Sample type 1");
-        if (TestDataGenerator.doesDomainExists(DATE_BASED_STUDY, "study", "Sample type 2"))
-            TestDataGenerator.deleteDomain(DATE_BASED_STUDY, "study", "Sample type 2");
-        if (TestDataGenerator.doesDomainExists(VISIT_BASED_STUDY, "study", "Sample type 1"))
-            TestDataGenerator.deleteDomain(VISIT_BASED_STUDY, "study", "Sample type 1");
-        if (TestDataGenerator.doesDomainExists(VISIT_BASED_STUDY, "study", "Sample type 2"))
-            TestDataGenerator.deleteDomain(VISIT_BASED_STUDY, "study", "Sample type 2");
+        DomainUtils.ensureDeleted(DATE_BASED_STUDY, "study", "Sample type 1");
+        DomainUtils.ensureDeleted(DATE_BASED_STUDY, "study", "Sample type 2");
+        DomainUtils.ensureDeleted(VISIT_BASED_STUDY, "study", "Sample type 1");
+        DomainUtils.ensureDeleted(VISIT_BASED_STUDY, "study", "Sample type 2");
     }
 
     private void createDatasetCategory(String projectName, String name)

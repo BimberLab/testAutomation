@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.labkey.remoteapi.CommandException;
 import org.labkey.test.BaseWebDriverTest;
 import org.labkey.test.Locator;
 import org.labkey.test.TestFileUtils;
@@ -27,6 +28,7 @@ import org.labkey.test.categories.Daily;
 import org.labkey.test.pages.experiment.UpdateSampleTypePage;
 import org.labkey.test.params.FieldDefinition;
 import org.labkey.test.params.experiment.SampleTypeDefinition;
+import org.labkey.test.params.list.IntListDefinition;
 import org.labkey.test.util.DataRegionTable;
 import org.labkey.test.util.ListHelper;
 import org.labkey.test.util.PortalHelper;
@@ -35,11 +37,13 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.labkey.test.params.FieldDefinition.ColumnType;
 
 @Category({Daily.class})
 @BaseWebDriverTest.ClassTimeout(minutes = 5)
@@ -79,13 +83,13 @@ public class FileAttachmentColumnTest extends BaseWebDriverTest
     }
 
     @BeforeClass
-    public static void setupProject()
+    public static void setupProject() throws Exception
     {
         FileAttachmentColumnTest init = (FileAttachmentColumnTest)getCurrentTest();
         init.doSetup();
     }
 
-    private void doSetup()
+    private void doSetup() throws Exception
     {
         _containerHelper.createProject(getProjectName(), "Custom");
         _containerHelper.createSubfolder(getProjectName(), FOLDER_NAME);
@@ -98,30 +102,32 @@ public class FileAttachmentColumnTest extends BaseWebDriverTest
         createSampleType();
     }
 
-    private void createList()
+    private void createList() throws IOException, CommandException
     {
         beginAt("/project/" + getProjectName() +"/"+ FOLDER_NAME + "/begin.view?");
         clickTab("Portal");
 
         ListHelper listHelper = new ListHelper(getDriver());
-        listHelper.createList(getProjectName() + "/" + FOLDER_NAME, LIST_NAME, ListHelper.ListColumnType.AutoInteger, LIST_KEY,
-                new ListHelper.ListColumn("Name", "Name", ListHelper.ListColumnType.String),
-                new ListHelper.ListColumn("File", "File", ListHelper.ListColumnType.Attachment));
+        new IntListDefinition(LIST_NAME, LIST_KEY)
+                .setFields(List.of(
+                        new FieldDefinition("Name", ColumnType.String),
+                        new FieldDefinition("File", ColumnType.String)))
+                .create(createDefaultConnection(), getProjectName() + "/" + FOLDER_NAME);
         goToManageLists();
-        listHelper.click(Locator.linkContainingText(LIST_NAME));
+        click(Locator.linkContainingText(LIST_NAME));
         // todo: import actual data here
-        Map<String, String> csvRow = new HashMap<>();
-        csvRow.put("Name", "csv file");
-        csvRow.put("File", SAMPLE_CSV.getAbsolutePath());
-        Map<String, String> jpgRow = new HashMap<>();
-        jpgRow.put("Name", "jpeg file");
-        jpgRow.put("File", SAMPLE_JPG.getAbsolutePath());
-        Map<String, String> pdfRow = new HashMap<>();
-        pdfRow.put("Name", "pdf file");
-        pdfRow.put("File", SAMPLE_PDF.getAbsolutePath());
-        Map<String, String> tifRow = new HashMap<>();
-        tifRow.put("Name", "tif file");
-        tifRow.put("File", SAMPLE_TIF.getAbsolutePath());
+        Map<String, Object> csvRow = Map.of(
+                "Name", "csv file",
+                "File", SAMPLE_CSV);
+        Map<String, Object> jpgRow = Map.of(
+                "Name", "jpeg file",
+                "File", SAMPLE_JPG);
+        Map<String, Object> pdfRow = Map.of(
+                "Name", "pdf file",
+                "File", SAMPLE_PDF);
+        Map<String, Object> tifRow = Map.of(
+                "Name", "tif file",
+                "File", SAMPLE_TIF);
         listHelper.insertNewRow(csvRow, false);
         listHelper.insertNewRow(jpgRow, false);
         listHelper.insertNewRow(pdfRow, false);
@@ -139,13 +145,13 @@ public class FileAttachmentColumnTest extends BaseWebDriverTest
         log("adding sample type with file column");
 
         SampleTypeHelper sampleHelper = new SampleTypeHelper(this);
-        sampleHelper.createSampleType(new SampleTypeDefinition(SAMPLESET_NAME).setFields(List.of(new FieldDefinition("color", FieldDefinition.ColumnType.String))), Collections.singletonList(Map.of("Name", "ed", "color", "green")));
+        sampleHelper.createSampleType(new SampleTypeDefinition(SAMPLESET_NAME).setFields(List.of(new FieldDefinition("color", ColumnType.String))), Collections.singletonList(Map.of("Name", "ed", "color", "green")));
 
         // add a 'file' column
         log("editing fields for sample type");
         clickFolder(FOLDER_NAME);
         UpdateSampleTypePage updatePage = sampleHelper.goToEditSampleType(SAMPLESET_NAME);
-        updatePage.addFields(List.of(new FieldDefinition("File", FieldDefinition.ColumnType.File)));
+        updatePage.addFields(List.of(new FieldDefinition("File", ColumnType.File)));
         updatePage.clickSave();
 
         StringBuilder sb = new StringBuilder("Name\tcolor\tfile\n");

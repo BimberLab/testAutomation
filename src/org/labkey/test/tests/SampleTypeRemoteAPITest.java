@@ -140,7 +140,7 @@ public class SampleTypeRemoteAPITest extends BaseWebDriverTest
         DataRegionTable materialsList =  DataRegionTable.DataRegion(getDriver()).withName("Material").waitFor();
 
         // clean up on success
-        lookupDgen.deleteDomain(createDefaultConnection());
+        lookupDgen.getQueryHelper(createDefaultConnection()).deleteDomain();
     }
 
 
@@ -157,10 +157,10 @@ public class SampleTypeRemoteAPITest extends BaseWebDriverTest
         navigateToFolder(getProjectName(), FOLDER_NAME);
         TestDataGenerator dgen = new TestDataGenerator("exp.materials", missingValueTable, getCurrentContainerPath())
                 .withColumns(List.of(
-                        TestDataGenerator.simpleFieldDef("name", FieldDefinition.ColumnType.String),
-                        TestDataGenerator.simpleFieldDef("mvStringData", FieldDefinition.ColumnType.String)
+                        new FieldDefinition("name", FieldDefinition.ColumnType.String),
+                        new FieldDefinition("mvStringData", FieldDefinition.ColumnType.String)
                                 .setMvEnabled(true).setLabel("MV Field"),
-                        TestDataGenerator.simpleFieldDef("volume", FieldDefinition.ColumnType.Decimal)
+                        new FieldDefinition("volume", FieldDefinition.ColumnType.Decimal)
                 ));
         dgen.createDomain(createDefaultConnection(), SAMPLE_TYPE_DOMAIN_KIND);
         dgen.addCustomRow(Map.of("name", "First", "mvStringData", "Q", "volume", 13.5));
@@ -208,7 +208,7 @@ public class SampleTypeRemoteAPITest extends BaseWebDriverTest
         String error = validator.enumerateMissingRows(insertedRows, Arrays.asList("Flag"));  // ensure all rows made it with expected values
         assertEquals("", error);    // if any expected rows are absent, error will describe what it expected but did not find
 
-        dgen.deleteDomain(createDefaultConnection());
+        dgen.getQueryHelper(createDefaultConnection()).deleteDomain();
     }
 
     @Test
@@ -219,10 +219,10 @@ public class SampleTypeRemoteAPITest extends BaseWebDriverTest
         navigateToFolder(getProjectName(), FOLDER_NAME);
         TestDataGenerator dgen = new TestDataGenerator("exp.materials", missingValueTable, getCurrentContainerPath())
                 .withColumns(List.of(
-                        TestDataGenerator.simpleFieldDef("name", FieldDefinition.ColumnType.String),
-                        TestDataGenerator.simpleFieldDef("mvStringData", FieldDefinition.ColumnType.String)
+                        new FieldDefinition("name", FieldDefinition.ColumnType.String),
+                        new FieldDefinition("mvStringData", FieldDefinition.ColumnType.String)
                                 .setMvEnabled(true).setLabel("MV Field"),
-                        TestDataGenerator.simpleFieldDef("volume", FieldDefinition.ColumnType.Decimal)
+                        new FieldDefinition("volume", FieldDefinition.ColumnType.Decimal)
                 ));
         dgen.createDomain(createDefaultConnection(), SAMPLE_TYPE_DOMAIN_KIND);
         dgen.addCustomRow(Map.of("name", "A", "mvStringData", "Q", "volume", 13.5));
@@ -255,7 +255,8 @@ public class SampleTypeRemoteAPITest extends BaseWebDriverTest
         rowD.put("mvstringdatamvindicator", null);
         rowD.put("mvStringData", "updatedValue");
 
-        SaveRowsResponse updateResponse = dgen.updateRows(createDefaultConnection(), Arrays.asList(rowD, rowE));
+        SaveRowsResponse updateResponse = dgen.getQueryHelper(createDefaultConnection())
+                .updateRows(Arrays.asList(rowD, rowE));
 
         // get a look at the result
         refresh();
@@ -287,7 +288,7 @@ public class SampleTypeRemoteAPITest extends BaseWebDriverTest
         assertEquals("expect cell to be mv-flagged", " labkey-mv-indicator", dCell.getAttribute("class"));
         assertEquals("expect mv-indicator value instead of underlying value", "Q", dCell.getText());
 
-        dgen.deleteDomain(createDefaultConnection());
+        dgen.getQueryHelper(createDefaultConnection()).deleteDomain();
     }
 
     @Test
@@ -298,10 +299,10 @@ public class SampleTypeRemoteAPITest extends BaseWebDriverTest
         navigateToFolder(getProjectName(), FOLDER_NAME);
         TestDataGenerator dgen = new TestDataGenerator("exp.materials", missingValueTable, getCurrentContainerPath())
                 .withColumns(List.of(
-                        TestDataGenerator.simpleFieldDef("name", FieldDefinition.ColumnType.String),
-                        TestDataGenerator.simpleFieldDef("mvStringData", FieldDefinition.ColumnType.String)
+                        new FieldDefinition("name", FieldDefinition.ColumnType.String),
+                        new FieldDefinition("mvStringData", FieldDefinition.ColumnType.String)
                                 .setMvEnabled(true).setLabel("MV Field"),
-                        TestDataGenerator.simpleFieldDef("volume", FieldDefinition.ColumnType.Decimal)
+                        new FieldDefinition("volume", FieldDefinition.ColumnType.Decimal)
                 ))
                 .withGeneratedRows(30);
         dgen.createDomain(createDefaultConnection(), SAMPLE_TYPE_DOMAIN_KIND);
@@ -334,7 +335,7 @@ public class SampleTypeRemoteAPITest extends BaseWebDriverTest
         Locator.tagWithClass("td", "labkey-mv-indicator")
                 .withDescendant(Locator.tagWithText("a", "N")).findElement(fourthRow);
 
-        dgen.deleteDomain(createDefaultConnection());
+        dgen.getQueryHelper(createDefaultConnection()).deleteDomain();
     }
 
     /**
@@ -352,10 +353,10 @@ public class SampleTypeRemoteAPITest extends BaseWebDriverTest
         navigateToFolder(getProjectName(), FOLDER_NAME);
         TestDataGenerator dgen = new TestDataGenerator("exp.materials", missingValueTable, getCurrentContainerPath())
                 .withColumns(List.of(
-                        TestDataGenerator.simpleFieldDef("name", FieldDefinition.ColumnType.String),
-                        TestDataGenerator.simpleFieldDef("mvStringData", FieldDefinition.ColumnType.String)
+                        new FieldDefinition("name", FieldDefinition.ColumnType.String),
+                        new FieldDefinition("mvStringData", FieldDefinition.ColumnType.String)
                                 .setMvEnabled(true).setLabel("MV Field"),
-                        TestDataGenerator.simpleFieldDef("vol", FieldDefinition.ColumnType.Decimal)
+                        new FieldDefinition("vol", FieldDefinition.ColumnType.Decimal)
                 ));
         dgen.createDomain(createDefaultConnection(), SAMPLE_TYPE_DOMAIN_KIND);
         dgen.addCustomRow(Map.of("name", "1st", "mvStringData", "Q", "vol", 17.5));
@@ -401,10 +402,10 @@ public class SampleTypeRemoteAPITest extends BaseWebDriverTest
         navigateToFolder(getProjectName(), FOLDER_NAME);
         TestDataGenerator dgen = new TestDataGenerator("exp.materials", missingValueTable, getCurrentContainerPath())
                 .withColumns(List.of(
-                        TestDataGenerator.simpleFieldDef("name", FieldDefinition.ColumnType.String),
-                        TestDataGenerator.simpleFieldDef("mvStringData", FieldDefinition.ColumnType.String)
+                        new FieldDefinition("name", FieldDefinition.ColumnType.String),
+                        new FieldDefinition("mvStringData", FieldDefinition.ColumnType.String)
                                 .setMvEnabled(true).setLabel("MV Field"),
-                        TestDataGenerator.simpleFieldDef("volume", FieldDefinition.ColumnType.Decimal)
+                        new FieldDefinition("volume", FieldDefinition.ColumnType.Decimal)
                 ));
         dgen.createDomain(createDefaultConnection(), SAMPLE_TYPE_DOMAIN_KIND);
         dgen.addCustomRow(Map.of("name", "First", "volume", 13.5));
@@ -446,7 +447,7 @@ public class SampleTypeRemoteAPITest extends BaseWebDriverTest
         assertEquals(" ", uneditedRowValues.get("mvStringData"));
         assertEquals("16.5", uneditedRowValues.get("volume"));
 
-        dgen.deleteDomain(createDefaultConnection());
+        dgen.getQueryHelper(createDefaultConnection()).deleteDomain();
     }
 
     @Test
@@ -478,10 +479,10 @@ public class SampleTypeRemoteAPITest extends BaseWebDriverTest
         navigateToFolder(getProjectName(), missingValueSamplesFolder);
         TestDataGenerator dgen = new TestDataGenerator("exp.materials", missingValueTable, getProjectName() + "/" + missingValueSamplesFolder)
                 .withColumns(List.of(
-                        TestDataGenerator.simpleFieldDef("name", FieldDefinition.ColumnType.String),
-                        TestDataGenerator.simpleFieldDef("mvStringData", FieldDefinition.ColumnType.String)
+                        new FieldDefinition("name", FieldDefinition.ColumnType.String),
+                        new FieldDefinition("mvStringData", FieldDefinition.ColumnType.String)
                                 .setMvEnabled(true).setLabel("MV Field"),
-                        TestDataGenerator.simpleFieldDef("volume", FieldDefinition.ColumnType.Decimal)
+                        new FieldDefinition("volume", FieldDefinition.ColumnType.Decimal)
                 ));
         dgen.createDomain(createDefaultConnection(), SAMPLE_TYPE_DOMAIN_KIND);
         dgen.addCustomRow(Map.of("name", "1st", "volume", 13.5));
@@ -525,7 +526,7 @@ public class SampleTypeRemoteAPITest extends BaseWebDriverTest
         DataRegionTable materialsList =  DataRegionTable.DataRegion(getDriver()).withName("Material").waitFor();
 
         // grab the new samples
-        SelectRowsResponse sampleTypeResponse = dgen.getRowsFromServer(createDefaultConnection());
+        SelectRowsResponse sampleTypeResponse = dgen.getQueryHelper(createDefaultConnection()).selectRows();
         Map<String, Object> firstAddedSample = sampleTypeResponse.getRows()
                 .stream()
                 .filter(a-> a.get("Name").equals("another new one"))
@@ -569,7 +570,7 @@ public class SampleTypeRemoteAPITest extends BaseWebDriverTest
                 "})";
         executeAsyncScript(updateScript);
 
-        SelectRowsResponse updateResponse = dgen.getRowsFromServer(createDefaultConnection());
+        SelectRowsResponse updateResponse = dgen.getQueryHelper(createDefaultConnection()).selectRows();
         Map<String, Object> thirdAddedSample = updateResponse.getRows()
                 .stream()
                 .filter(a-> a.get("Name").equals("another really new one"))
@@ -699,7 +700,7 @@ public class SampleTypeRemoteAPITest extends BaseWebDriverTest
         DataRegionTable materialsList =  DataRegionTable.DataRegion(getDriver()).withName("Material").waitFor();
 
         // get the samples from the sample type
-        SelectRowsResponse sampleTypeResponse = dgen.getRowsFromServer(createDefaultConnection());
+        SelectRowsResponse sampleTypeResponse = dgen.getQueryHelper(createDefaultConnection()).selectRows();
 
         // at this point, the API either doesn't work or requires some hack to make it work if you aren't
         // importing from a file.

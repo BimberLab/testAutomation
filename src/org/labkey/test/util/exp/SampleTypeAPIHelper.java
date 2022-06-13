@@ -102,14 +102,4 @@ public class SampleTypeAPIHelper
         return rowIds;
     }
 
-    /**
-     * This method has a misleading name. "Name" and "Sample ID" refer to the same column. This is actually fetching
-     * row IDs of the specified samples.
-     * @deprecated Use {@link #getRowIdsForSamples(String, String, List)}
-     */
-    @Deprecated(since = "22.4")
-    public static Map<String, Long> getSampleIdFromName(String folder, String sampleTypeName, List<String> sampleNames) throws IOException, CommandException
-    {
-        return getRowIdsForSamples(folder, sampleTypeName, sampleNames);
-    }
 }

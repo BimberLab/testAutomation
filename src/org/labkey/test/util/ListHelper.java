@@ -432,15 +432,14 @@ public class ListHelper extends LabKeySiteWrapper
     /**
      * @deprecated Use {@link FieldDefinition}
      */
-    @Deprecated
+    @Deprecated (since = "20.3")
     public static class ListColumn extends FieldDefinition
     {
         public ListColumn(String name, String label, ListColumnType type, String description)
         {
-            super(name);
+            super(name, type.toNew());
             setLabel(label);
             setDescription(description);
-            setType(type.toNew());
         }
 
         public ListColumn(String name, String label, ListColumnType type)
@@ -448,9 +447,5 @@ public class ListHelper extends LabKeySiteWrapper
             this(name, label, type, null);
         }
 
-        public ListColumn(String name, ListColumnType type)
-        {
-            this(name, null, type);
-        }
     }
 }

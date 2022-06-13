@@ -1,16 +1,16 @@
 package org.labkey.test.tests.experiment;
 
-import org.junit.BeforeClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.labkey.test.BaseWebDriverTest;
 import org.labkey.test.Locator;
-import org.labkey.test.TestTimeoutException;
 import org.labkey.test.pages.query.SourceQueryPage;
 import org.labkey.test.pages.query.UpdateQueryRowPage;
 import org.labkey.test.params.FieldDefinition;
 import org.labkey.test.params.experiment.SampleTypeDefinition;
+import org.labkey.test.params.list.IntListDefinition;
 import org.labkey.test.util.DataRegionTable;
 import org.labkey.test.util.PortalHelper;
 import org.labkey.test.util.TestDataGenerator;
@@ -20,19 +20,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @Category({})
 public class SampleTypeLookupDisplayColumnTest extends BaseWebDriverTest
 {
-    private final String TEST_LOOKUP_SAMPLETYPE = "lookupsampletype";
-    private final String TEST_INGREDIENT_LIST = "ingredientList";
-
-    @Override
-    protected void doCleanup(boolean afterTest) throws TestTimeoutException
-    {
-        super.doCleanup(afterTest);
-    }
+    private static final String TEST_LOOKUP_SAMPLETYPE = "lookupsampletype";
+    private static final String TEST_INGREDIENT_LIST = "ingredientList";
 
     @BeforeClass
     public static void setupProject() throws Exception
@@ -46,8 +40,9 @@ public class SampleTypeLookupDisplayColumnTest extends BaseWebDriverTest
                 new FieldDefinition("intColumn", FieldDefinition.ColumnType.Integer),
                 new FieldDefinition("textColumn", FieldDefinition.ColumnType.String),
                 new FieldDefinition("titleColumn", FieldDefinition.ColumnType.String));
-        TestDataGenerator dgen = new TestDataGenerator("lists", init.TEST_INGREDIENT_LIST, init.getProjectName())
-                .withColumns(listColumns);
+        TestDataGenerator dgen = new IntListDefinition(TEST_INGREDIENT_LIST, "key")
+                .setFields(listColumns)
+                .create(init.createDefaultConnection(), init.getProjectName());
         dgen.addCustomRow(Map.of("intColumn", 1,
                 "textColumn", "heavy heavy gas",
                 "titleColumn", "sodium hexafluoride"));
@@ -57,16 +52,15 @@ public class SampleTypeLookupDisplayColumnTest extends BaseWebDriverTest
         dgen.addCustomRow(Map.of("intColumn", 3,
                 "textColumn", "inert light gas",
                 "titleColumn", "helium"));
-        dgen.createList(init.createDefaultConnection(), "key");
         dgen.insertRows();
 
         // create a sampleType with a lookup column to the issue tracker
         List<FieldDefinition> testColumns = Arrays.asList(
                 new FieldDefinition("comment", FieldDefinition.ColumnType.String),
                 new FieldDefinition("amount", FieldDefinition.ColumnType.Decimal),
-                new FieldDefinition("ingredient", new FieldDefinition.LookupInfo(init.getProjectName(), "lists", init.TEST_INGREDIENT_LIST)
+                new FieldDefinition("ingredient", new FieldDefinition.LookupInfo(init.getProjectName(), "lists", TEST_INGREDIENT_LIST)
                         .setTableType(FieldDefinition.ColumnType.Integer)));
-        SampleTypeDefinition sampleTypeDef = new SampleTypeDefinition(init.TEST_LOOKUP_SAMPLETYPE)
+        SampleTypeDefinition sampleTypeDef = new SampleTypeDefinition(TEST_LOOKUP_SAMPLETYPE)
                 .setFields(testColumns)
                 .setNameExpression("S-${genId}");
         var dataGenerator = SampleTypeAPIHelper.createEmptySampleType(init.getProjectName(), sampleTypeDef);

@@ -16,20 +16,15 @@
 package org.labkey.test.util;
 
 import org.apache.commons.lang3.time.DateUtils;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.labkey.api.collections.CaseInsensitiveLinkedHashMap;
 import org.labkey.remoteapi.CommandException;
-import org.labkey.remoteapi.CommandResponse;
 import org.labkey.remoteapi.Connection;
 import org.labkey.remoteapi.collections.CaseInsensitiveHashMap;
 import org.labkey.remoteapi.domain.CreateDomainCommand;
 import org.labkey.remoteapi.domain.DomainResponse;
 import org.labkey.remoteapi.domain.PropertyDescriptor;
-import org.labkey.remoteapi.query.Filter;
 import org.labkey.remoteapi.query.SaveRowsResponse;
-import org.labkey.remoteapi.query.SelectRowsResponse;
-import org.labkey.remoteapi.query.Sort;
 import org.labkey.test.TestFileUtils;
 import org.labkey.test.WebTestHelper;
 import org.labkey.test.params.FieldDefinition;
@@ -407,25 +402,8 @@ public class TestDataGenerator
     @Deprecated (since = "22.4")
     public DomainResponse createList(Connection cn, String keyName) throws IOException, CommandException
     {
+
         return createDomain(cn, "IntList", Map.of("keyName", keyName));
-    }
-
-    /**
-     * @deprecated Use {@link QueryApiHelper}
-     */
-    @Deprecated(since = "22.4")
-    public DomainResponse getDomain(Connection cn) throws IOException, CommandException
-    {
-        return getQueryHelper(cn).getDomain();
-    }
-
-    /**
-     * @deprecated Use {@link QueryApiHelper}
-     */
-    @Deprecated(since = "22.4")
-    public CommandResponse deleteDomain(Connection cn) throws IOException, CommandException
-    {
-        return getQueryHelper(cn).deleteDomain();
     }
 
     public SaveRowsResponse insertRows() throws IOException, CommandException
@@ -443,60 +421,6 @@ public class TestDataGenerator
         return getQueryHelper(cn).insertRows(rows);
     }
 
-    /**
-     * @deprecated Use {@link QueryApiHelper}
-     */
-    @Deprecated(since = "22.4")
-    public SaveRowsResponse updateRows(Connection cn, List<Map<String, Object>> rows) throws IOException, CommandException
-    {
-        return getQueryHelper(cn).updateRows(rows);
-    }
-
-    /**
-     * @deprecated Use {@link QueryApiHelper}
-     */
-    @Deprecated(since = "22.4")
-    public SelectRowsResponse getRowsFromServer(Connection cn) throws IOException, CommandException
-    {
-        return getQueryHelper(cn).selectRows();
-    }
-
-    /**
-     * @deprecated Use {@link QueryApiHelper}
-     */
-    @Deprecated(since = "22.4")
-    public SelectRowsResponse getRowsFromServer(Connection cn, List<String> intendedColumns) throws IOException, CommandException
-    {
-        return getQueryHelper(cn).selectRows(intendedColumns);
-    }
-
-    /**
-     * @deprecated Use {@link QueryApiHelper}
-     */
-    @Deprecated(since = "22.4")
-    public SelectRowsResponse getRowsFromServer(Connection cn, List<String> intendedColumns, @Nullable  List<Filter> filters) throws IOException, CommandException
-    {
-        return getQueryHelper(cn).selectRows(intendedColumns, filters);
-    }
-
-    /**
-     * @deprecated Use {@link QueryApiHelper}
-     */
-    @Deprecated(since = "22.4")
-    public SelectRowsResponse getRowsFromServer(Connection cn, List<String> intendedColumns, @Nullable  List<Filter> filters, @Nullable List<Sort> sorts) throws IOException, CommandException
-    {
-        return getQueryHelper(cn).selectRows(intendedColumns, filters, sorts);
-    }
-
-    /**
-     * @deprecated Use {@link QueryApiHelper}
-     */
-    @Deprecated(since = "22.4")
-    public SaveRowsResponse deleteRows(Connection cn, List<Map<String,Object>> rowsToDelete) throws IOException, CommandException
-    {
-        return getQueryHelper(cn).deleteRows(rowsToDelete);
-    }
-
     public QueryApiHelper getQueryHelper(Connection connection)
     {
         return new QueryApiHelper(connection, _containerPath, _schemaName, _queryName);
@@ -505,36 +429,6 @@ public class TestDataGenerator
     public TestDataValidator getValidator()
     {
         return new TestDataValidator(_allGeneratedRows);
-    }
-
-    /**
-     * @deprecated Inline this.
-     */
-    @Deprecated (since = "20.4")
-    static public FieldDefinition simpleFieldDef(String name, FieldDefinition.ColumnType type)
-    {
-        return new FieldDefinition(name, type);
-    }
-
-    /**
-     * @deprecated Moved to {@link DomainUtils#deleteDomain(String, String, String)}
-     */
-    @Deprecated (since = "22.4")
-    public static CommandResponse deleteDomain(final String containerPath, final String schema,
-                                                 final String queryName)
-            throws CommandException
-    {
-        return DomainUtils.deleteDomain(containerPath, schema, queryName);
-    }
-
-    /**
-     * @deprecated Moved to {@link DomainUtils#doesDomainExist(String, String, String)}
-     */
-    @Deprecated (since = "22.4")
-    public static boolean doesDomainExists(final String containerPath, final String schema,
-                                                final String queryName)
-    {
-        return DomainUtils.doesDomainExist(containerPath, schema, queryName);
     }
 
 }

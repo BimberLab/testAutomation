@@ -24,6 +24,7 @@ import org.labkey.test.Locator;
 import org.labkey.test.TestFileUtils;
 import org.labkey.test.TestTimeoutException;
 import org.labkey.test.categories.Daily;
+import org.labkey.test.util.CodeMirrorHelper;
 import org.labkey.test.util.DataRegionTable;
 import org.labkey.test.util.Ext4Helper;
 import org.labkey.test.util.LogMethod;
@@ -395,7 +396,7 @@ public class SurveyTest extends BaseWebDriverTest
         clickFolder(FOLDER_NAME);
         clickEditForLabel("Survey Designs", SUBFOLDER_SURVEY_DESIGN);
         String json = TestFileUtils.getFileContents(new File(PIPELINE_LOC, "CustomSurveyMetadata.json"));
-        _extHelper.setCodeMirrorValue("metadata", json);
+        new CodeMirrorHelper(this, "metadata").setCodeMirrorValue(json);
         clickButton("Save Survey");
 
         // add the subfolder survey design webpart
@@ -572,7 +573,7 @@ public class SurveyTest extends BaseWebDriverTest
         // add survey metadata which disables autosave.
         clickEditForLabel("Survey Designs", autoSaveSurveyDesign);
         String json = TestFileUtils.getFileContents(new File(PIPELINE_LOC, "AutoSaveDisabledMetadata.json"));
-        _extHelper.setCodeMirrorValue("metadata", json);
+        new CodeMirrorHelper(this, "metadata").setCodeMirrorValue(json);
         clickButton("Save Survey");
 
         clickCreateSurvey(autoSaveSurveyDesign);

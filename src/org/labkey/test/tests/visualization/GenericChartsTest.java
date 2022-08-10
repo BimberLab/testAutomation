@@ -22,6 +22,7 @@ import org.labkey.test.Locator;
 import org.labkey.test.components.ChartLayoutDialog;
 import org.labkey.test.pages.TimeChartWizard;
 import org.labkey.test.tests.ReportTest;
+import org.labkey.test.util.CodeMirrorHelper;
 import org.labkey.test.util.Ext4Helper;
 import org.labkey.test.util.LogMethod;
 import org.openqa.selenium.WebElement;
@@ -162,7 +163,7 @@ public abstract class GenericChartsTest extends ReportTest
         log("Export to script.");
         Assert.assertEquals("Unexpected number of export script icons", 1, getExportScriptIconCount("chart-render-div"));
         clickExportScriptIcon("chart-render-div", 0);
-        String exportScript = _extHelper.getCodeMirrorValue("export-script-textarea");
+        String exportScript = new CodeMirrorHelper(this, "export-script-textarea").getCodeMirrorValue();
 
         log("Validate that the script is as expected.");
         assertTrue("Script did not contain expected text: '" + type + "' ", exportScript.toLowerCase().contains(type.toLowerCase()));

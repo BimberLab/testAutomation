@@ -16,6 +16,7 @@
 package org.labkey.test.pages;
 
 import org.labkey.test.Locator;
+import org.labkey.test.util.CodeMirrorHelper;
 import org.labkey.test.util.Ext4Helper;
 import org.openqa.selenium.WebDriver;
 
@@ -55,7 +56,7 @@ public class TourEditor extends LabKeyPage
     public void importTour(String JSON)
     {
         click(Locators.importTourButton);
-        _extHelper.setCodeMirrorValue("export-script-textarea", JSON);
+        new CodeMirrorHelper(this, "export-script-textarea").setCodeMirrorValue(JSON);
         _ext4Helper.clickWindowButton("Import Tour", "Import", 0, 0);
         waitForElementToDisappear(Ext4Helper.Locators.window("Import Tour"));
     }
@@ -64,7 +65,7 @@ public class TourEditor extends LabKeyPage
     {
         click(Locators.exportButton);
         waitForElement(Ext4Helper.Locators.window("Export Tour"));
-        return _extHelper.getCodeMirrorValue("export-script-textarea");
+        return new CodeMirrorHelper(this, "export-script-textarea").getCodeMirrorValue();
     }
 
     public void setTitle(String title)
@@ -103,7 +104,7 @@ public class TourEditor extends LabKeyPage
     //index is 1 based
     public void setStep(int index, String step)
     {
-        _extHelper.setCodeMirrorValue("tour-step" + index, step);
+        new CodeMirrorHelper(this, "tour-step" + index).setCodeMirrorValue(step);
     }
 
     public enum TourMode

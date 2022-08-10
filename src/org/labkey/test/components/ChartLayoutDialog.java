@@ -19,6 +19,7 @@ import org.labkey.test.Locator;
 import org.labkey.test.components.ext4.Window;
 import org.labkey.test.pages.TimeChartWizard;
 import org.labkey.test.selenium.LazyWebElement;
+import org.labkey.test.util.CodeMirrorHelper;
 import org.labkey.test.util.Ext4Helper;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -380,13 +381,15 @@ public class ChartLayoutDialog<EC extends ChartLayoutDialog.ElementCache> extend
     public String getDeveloperSourceContent()
     {
         clickDeveloperSourceTab();
-        return getWrapper()._extHelper.getCodeMirrorValue("point-click-fn-textarea");
+        getWrapper();
+        return new CodeMirrorHelper(getWrapper(), "point-click-fn-textarea").getCodeMirrorValue();
     }
 
     public ChartLayoutDialog setDeveloperSourceContent(String source)
     {
         clickDeveloperSourceTab();
-        getWrapper()._extHelper.setCodeMirrorValue("point-click-fn-textarea", source);
+        getWrapper();
+        new CodeMirrorHelper(getWrapper(), "point-click-fn-textarea").setCodeMirrorValue(source);
         return this;
     }
 
@@ -400,7 +403,8 @@ public class ChartLayoutDialog<EC extends ChartLayoutDialog.ElementCache> extend
     public String getDeveloperHelpContent()
     {
         clickDeveloperHelpTab();
-        return getWrapper()._extHelper.getCodeMirrorValue("point-click-fn-textarea");
+        getWrapper();
+        return new CodeMirrorHelper(getWrapper(), "point-click-fn-textarea").getCodeMirrorValue();
     }
 
     public TimeChartWizard clickApply()

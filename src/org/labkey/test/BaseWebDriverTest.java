@@ -2425,13 +2425,13 @@ public abstract class BaseWebDriverTest extends LabKeySiteWrapper implements Cle
         _ext4Helper.selectComboBoxItem("Query", queryName);
         clickButton("Generate Survey Questions", 0);
         sleep(1000); // give it a second to generate the metadata
-        String metadataValue = _extHelper.getCodeMirrorValue("metadata");
+        String metadataValue = new CodeMirrorHelper(this, "metadata").getCodeMirrorValue();
         assertNotNull("No generate survey question metadata available", metadataValue);
         if (metadataFile != null)
         {
             assertTrue(metadataFile.exists());
             String json = TestFileUtils.getFileContents(metadataFile);
-            _extHelper.setCodeMirrorValue("metadata", json);
+            new CodeMirrorHelper(this, "metadata").setCodeMirrorValue(json);
         }
 
         clickButton("Save Survey");

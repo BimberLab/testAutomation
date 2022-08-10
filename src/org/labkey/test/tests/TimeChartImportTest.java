@@ -26,6 +26,7 @@ import org.labkey.test.TestFileUtils;
 import org.labkey.test.categories.Charting;
 import org.labkey.test.categories.Daily;
 import org.labkey.test.categories.Reports;
+import org.labkey.test.util.CodeMirrorHelper;
 import org.labkey.test.util.DataRegionTable;
 import org.labkey.test.util.Ext4Helper;
 import org.labkey.test.util.PortalHelper;
@@ -285,7 +286,7 @@ public class TimeChartImportTest extends StudyBaseTest
     private String getExportScript()
     {
         clickExportScriptIcon("chart-render-div", 0);
-        String exportScript = _extHelper.getCodeMirrorValue("export-script-textarea");
+        String exportScript = new CodeMirrorHelper(this, "export-script-textarea").getCodeMirrorValue();
         waitAndClick(Ext4Helper.Locators.ext4Button("Close"));
 
         return exportScript;

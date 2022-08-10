@@ -98,7 +98,7 @@ public class PipelineAnalysisHelper
         {
             if ("xmlParameters".equals(property.getKey()))
             {
-                _test._extHelper.setCodeMirrorValue(property.getKey(), property.getValue());
+                new CodeMirrorHelper(_test, property.getKey()).setCodeMirrorValue(property.getValue());
             }
             else
             {
@@ -228,14 +228,14 @@ public class PipelineAnalysisHelper
         {
             protocolSelect.selectByVisibleText(protocolName);
             if (null != protocolDef)
-                verifySavedProtocolDef(protocolDef, _test._extHelper.getCodeMirrorValue("xmlParameters"));
+                verifySavedProtocolDef(protocolDef, new CodeMirrorHelper(_test, "xmlParameters").getCodeMirrorValue());
         }
         else
         {
             protocolSelect.selectByVisibleText("<New Protocol>");
             _test.setFormElement(Locator.id("protocolNameInput"), protocolName);
             if (null != protocolDef)
-                _test._extHelper.setCodeMirrorValue("xmlParameters", protocolDef);
+                new CodeMirrorHelper(_test, "xmlParameters").setCodeMirrorValue(protocolDef);
         }
     }
 

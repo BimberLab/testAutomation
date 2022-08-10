@@ -27,6 +27,7 @@ import org.labkey.test.components.SaveChartDialog;
 import org.labkey.test.components.dumbster.EmailRecordTable;
 import org.labkey.test.components.html.BootstrapMenu;
 import org.labkey.test.pages.TimeChartWizard;
+import org.labkey.test.util.CodeMirrorHelper;
 import org.labkey.test.util.Ext4Helper;
 import org.labkey.test.util.LogMethod;
 import org.labkey.test.util.PortalHelper;
@@ -195,7 +196,7 @@ public class ReportAndDatasetNotificationTest extends StudyBaseTest
 
         openReport(R_NAME);
         waitAndClick(Ext4Helper.Locators.tab("Source"));
-        String script = _extHelper.getCodeMirrorValue("script-report-editor");
+        String script = new CodeMirrorHelper(this, "script-report-editor").getCodeMirrorValue();
         setCodeEditorValue("script-report-editor", script + "     #an edit");
         clickButton("Save");
 

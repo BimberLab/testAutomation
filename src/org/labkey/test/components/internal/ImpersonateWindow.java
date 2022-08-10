@@ -18,11 +18,11 @@ package org.labkey.test.components.internal;
 import org.labkey.test.components.ext4.Window;
 import org.labkey.test.util.Ext4Helper;
 import org.labkey.test.util.TestLogger;
+import org.labkey.test.util.selenium.WebDriverUtils;
 import org.openqa.selenium.Alert;
 import org.openqa.selenium.UnhandledAlertException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.firefox.FirefoxDriver;
 
 public abstract class ImpersonateWindow extends Window<ImpersonateWindow.ElementCache>
 {
@@ -36,7 +36,7 @@ public abstract class ImpersonateWindow extends Window<ImpersonateWindow.Element
         getWrapper().doAndWaitForPageToLoad(() ->
         {
             elementCache().button.click();
-            if (getDriver() instanceof FirefoxDriver)
+            if (WebDriverUtils.isFirefox(getDriver()))
             {
                 final Alert alert = getWrapper().getAlertIfPresent();
                 if (alert != null)

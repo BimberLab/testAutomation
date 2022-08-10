@@ -15,20 +15,32 @@
  */
 package org.labkey.test.util.selenium;
 
+import org.jetbrains.annotations.NotNull;
 import org.labkey.test.Locator;
 import org.labkey.test.Locators;
+import org.labkey.test.components.Component;
 import org.labkey.test.util.DataRegionTable;
+import org.labkey.test.util.TestLogger;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.WrapsDriver;
 import org.openqa.selenium.WrapsElement;
+import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.interactions.Locatable;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public abstract class WebDriverUtils
+public final class WebDriverUtils
 {
+    private WebDriverUtils()
+    {
+        // Do not instantiate
+    }
+
     public static class ScrollUtil
     {
         private final WebDriver _webDriver;
@@ -41,9 +53,9 @@ public abstract class WebDriverUtils
         public boolean scrollUnderFloatingHeader(WebElement blockedElement)
         {
             List<WebElement> floatingHeaders = Locator.findElements(_webDriver,
-                Locators.floatingHeaderContainer(),
-                Locators.appFloatingHeader(),
-                DataRegionTable.Locators.floatingHeader().notHidden());
+                    Locators.floatingHeaderContainer(),
+                    Locators.appFloatingHeader(),
+                    DataRegionTable.Locators.floatingHeader().notHidden());
 
             int headerHeight = 0;
             for (WebElement floatingHeader : floatingHeaders)
@@ -77,24 +89,62 @@ public abstract class WebDriverUtils
         }
     }
 
+    public static boolean isFirefox(WebDriver driver)
+    {
+        return extractWrappedDriver(driver) instanceof FirefoxDriver;
+    }
+
     /**
      * Extract a WebDriver instance from an arbitrarily wrapped object
-     * @param peeling Object that wraps a WebDriver. Typically a Component, SearchContext, or WebElement
+     * @param wrapper Object that wraps a WebDriver. Typically, a Component, SearchContext, or WebElement
      * @return WebDriver instance or null if none is found
      */
-    public static WebDriver extractWrappedDriver(Object peeling)
+    public static WebDriver extractWrappedDriver(Object wrapper)
     {
-        while (peeling instanceof WrapsElement)
+        Object peeling = wrapper;
+        if (peeling instanceof Component<?> cmp)
         {
-            peeling = ((WrapsElement) peeling).getWrappedElement();
+            peeling = cmp.getComponentElement();
         }
-        while (peeling instanceof WrapsDriver)
+        while (peeling instanceof WrapsElement we)
         {
-            peeling = ((WrapsDriver) peeling).getWrappedDriver();
+            peeling = we.getWrappedElement();
         }
-        if (peeling instanceof WebDriver)
-            return (WebDriver) peeling;
+        while (peeling instanceof WrapsDriver wd)
+        {
+            peeling = wd.getWrappedDriver();
+        }
+        if (peeling instanceof WebDriver wd)
+        {
+            return wd;
+        }
         else
+        {
+            TestLogger.warn("Unable to extract WebDriver from: " +
+                    (peeling == null ? "null" : (peeling.getClass() +
+                            (peeling == wrapper ? "" :
+                                    " Unpeeled from: " + wrapper.getClass()))));
             return null;
+        }
     }
+
+    private static final List<String> html5InputTypes = Arrays.asList("color", "date", "datetime-local", "email", "month", "number", "range", "search", "tel", "time", "url", "week");
+    private static final Map<Class<? extends WebDriver>, Map<String, Boolean>> html5InputSupport = new HashMap<>();
+    public static boolean isHtml5InputTypeSupported(@NotNull final String inputType, @NotNull final WebDriver driver)
+    {
+        if (!html5InputTypes.contains(inputType))
+        {
+            return false;
+        }
+        Class<? extends WebDriver> driverClass = extractWrappedDriver(driver).getClass();
+        Map<String, Boolean> currentSupport = html5InputSupport.computeIfAbsent(driverClass, k -> new HashMap<>());
+        return currentSupport.computeIfAbsent(inputType, k -> (Boolean) ((JavascriptExecutor) driver)
+                .executeScript("""
+                                var i = document.createElement('input');
+                                i.setAttribute('type', arguments[0]);
+                                return i.type === arguments[0];
+                                """
+                , k));
+    }
+
 }

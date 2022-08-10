@@ -16,10 +16,13 @@
 package org.labkey.test.components.html;
 
 import org.junit.Assert;
+import org.labkey.test.util.TestLogger;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
 import java.io.File;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class FileInput extends Input
 {
@@ -33,11 +36,30 @@ public class FileInput extends Input
         getWrapper().setFormElement(getComponentElement(), file);
     }
 
+    public void set(List<File> files)
+    {
+        WebElement el = getComponentElement();
+
+        for (File file : files)
+        {
+            if (!file.exists())
+            {
+                throw new IllegalArgumentException("File not found: " + file);
+            }
+        }
+
+        getWrapper().executeScript("arguments[0].value = '';", el);
+        List<String> filePaths = files.stream().map(File::getAbsolutePath).collect(Collectors.toList());
+        String fileNames = String.join("\n", filePaths);
+        TestLogger.log(fileNames);
+        el.sendKeys(fileNames);
+    }
+
     @Override
     protected void assertElementType(WebElement el)
     {
         super.assertElementType(el);
         String type = el.getAttribute("type");
-        Assert.assertEquals("Not a file input: " + el.toString(), "file", type);
+        Assert.assertEquals("Not a file input: " + el, "file", type);
     }
 }

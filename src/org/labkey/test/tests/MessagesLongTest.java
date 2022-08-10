@@ -165,7 +165,6 @@ public class MessagesLongTest extends BaseWebDriverTest
                 .createPermissionsGroup("testers1")
                 .assertPermissionSetting("testers1", "No Permissions")
                 .clickSaveAndFinish();
-        _containerHelper.enableModule(PROJECT_NAME, "Dumbster");
 
 
     }

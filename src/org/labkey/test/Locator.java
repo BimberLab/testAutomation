@@ -35,7 +35,6 @@ import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.WrapsDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.support.ui.FluentWait;
 
 import java.text.DecimalFormat;
@@ -1788,14 +1787,14 @@ public abstract class Locator extends By
 
         /**
          * Geckodriver follows spec more closely than some tests expect. Need to trim whitespace to find links by text.
-         * <a href='https://www.w3.org/TR/webdriver1/#link-text'>WebDriver Spec</a>
+         * <a href="https://www.w3.org/TR/webdriver1/#link-text">WebDriver Spec</a>
          * @return Link text appropriate to the current WebDriver instance (if able to be determined)
          */
         private String getW3CLinkText(SearchContext context)
         {
             // We need to do this every time because many Locators are defined statically
             WebDriver webDriver = WebDriverUtils.extractWrappedDriver(context);
-            if (webDriver instanceof FirefoxDriver)
+            if (WebDriverUtils.isFirefox(webDriver))
             {
                 return _linkText.replaceAll(NBSP, " ").trim();
             }

@@ -33,6 +33,8 @@ import org.labkey.remoteapi.GuestCredentialsProvider;
 import org.labkey.remoteapi.security.WhoAmICommand;
 import org.labkey.remoteapi.security.WhoAmIResponse;
 import org.labkey.test.components.html.BootstrapMenu;
+import org.labkey.test.components.html.DateInput;
+import org.labkey.test.components.html.NumberInput;
 import org.labkey.test.components.html.RadioButton;
 import org.labkey.test.components.html.SiteNavBar;
 import org.labkey.test.components.labkey.LabKeyAlert;
@@ -58,6 +60,7 @@ import org.labkey.test.util.RelativeUrl;
 import org.labkey.test.util.TestLogger;
 import org.labkey.test.util.TextSearcher;
 import org.labkey.test.util.Timer;
+import org.labkey.test.util.selenium.WebDriverUtils;
 import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Capabilities;
@@ -108,7 +111,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -446,7 +448,7 @@ public abstract class WebDriverWrapper implements WrapsDriver
 
     public boolean isFirefox()
     {
-        return getDriver().getClass().isAssignableFrom(FirefoxDriver.class);
+        return WebDriverUtils.isFirefox(getDriver());
     }
 
     public Object executeScript(String script, Object... arguments)
@@ -2206,7 +2208,7 @@ public abstract class WebDriverWrapper implements WrapsDriver
         }
         assertEquals("Wrong number of files downloaded to " + downloadDir, expectedFileCount, newFiles.length);
 
-        if (getDriver() instanceof FirefoxDriver)
+        if (isFirefox())
             Locator.css("body").findElement(getDriver()).sendKeys(Keys.ESCAPE); // Dismiss download dialog
 
         return newFiles;
@@ -3261,7 +3263,7 @@ public abstract class WebDriverWrapper implements WrapsDriver
         }
         else if (!input.getTagName().equals("select") && text.length() < 1000 && !text.contains("\n") && !text.contains("\t"))
         {
-            actionClear(input); // Some inputs swallow standard 'WebElement.clear' in certain cases
+            actionClear(input);
             if (!waitFor(()-> getFormElement(input).length() == 0, 500))
             {
                 TestLogger.warn("Failed to clear input: " + input);
@@ -3280,9 +3282,8 @@ public abstract class WebDriverWrapper implements WrapsDriver
 
         try
         {
-            String elementClass = input.getAttribute("class");
-            if (elementClass.contains("gwt-TextBox") || elementClass.contains("gwt-TextArea") || elementClass.contains("x-form-text"))
-                fireEvent(input, SeleniumEvent.blur); // Make GWT and ExtJS form elements behave better
+            fireEvent(input, SeleniumEvent.change);
+            fireEvent(input, SeleniumEvent.blur);
         }
         catch(StaleElementReferenceException stale)
         {
@@ -3295,6 +3296,10 @@ public abstract class WebDriverWrapper implements WrapsDriver
         new Actions(getDriver()).moveToElement(el).click().perform();
     }
 
+    /**
+     * Clears an input without losing focus
+     * @param input input element
+     */
     public void actionClear(WebElement input)
     {
         String osName = System.getProperty("os.name");
@@ -3311,8 +3316,8 @@ public abstract class WebDriverWrapper implements WrapsDriver
     /**
      *  puts the specified text into the clipboard, then pastes it into the specified element,
      *  or whatever has focus at the moment.
-     * @param input
-     * @param text
+     * @param input input element (or 'null' to paste into currently focused element)
+     * @param text text to paste
      */
     public void actionPaste(WebElement input, String text)
     {
@@ -3342,24 +3347,9 @@ public abstract class WebDriverWrapper implements WrapsDriver
         }
     }
 
-    private static final List<String> html5InputTypes = Arrays.asList("color", "date", "datetime-local", "email", "month", "number", "range", "search", "tel", "time", "url", "week");
-    private final Map<String, Boolean> html5InputSupport = new HashMap<>(); // Don't make static. Different tests may run on different browsers
     protected final boolean isHtml5InputTypeSupported(String inputType)
     {
-        if (!html5InputTypes.contains(inputType))
-        {
-            return false;
-        }
-        if (!html5InputSupport.containsKey(inputType))
-        {
-            html5InputSupport.put(inputType,
-                    (Boolean) executeScript(
-                            "var i = document.createElement('input');" +
-                                    "i.setAttribute('type', arguments[0]);" +
-                                    "return i.type === arguments[0];"
-                            , inputType));
-        }
-        return html5InputSupport.get(inputType);
+        return WebDriverUtils.isHtml5InputTypeSupported(inputType, getDriver());
     }
 
     private void setHtml5Input(WebElement input, String inputType, String value)
@@ -3377,70 +3367,19 @@ public abstract class WebDriverWrapper implements WrapsDriver
                 setHtml5NumberInput(input, value);
                 break;
             default:
-                TestLogger.warn(String.format("No special handling defined for HTML5 input type = '%s'.", inputType));
+                TestLogger.warn(String.format("No special handling defined for HTML5 input type = '%s'.", inputType), new Throwable());
                 setInput(input, value);
         }
     }
 
     private void setHtml5DateInput(WebElement el, String text)
     {
-        String inputFormat = "yyyy-MM-dd";
-        SimpleDateFormat inputFormatter = new SimpleDateFormat(inputFormat);
-
-        try
-        {
-            setHtml5DateInput(el, inputFormatter.parse(text));
-        }
-        catch (ParseException e)
-        {
-            throw new IllegalArgumentException("Unable to parse date " + text + ". Format should be " + inputFormat);
-        }
-    }
-
-    private void setHtml5DateInput(WebElement el, Date date)
-    {
-        // Firefox requires ISO date format (yyyy-MM-dd)
-        String formFormat = isFirefox() ? "yyyy-MM-dd" : "MMddyyyy";
-        SimpleDateFormat formFormatter = new SimpleDateFormat(formFormat);
-        String formDate = formFormatter.format(date);
-
-        fireEvent(el, SeleniumEvent.focus);
-        executeScript("arguments[0].value = ''", el);
-        el.sendKeys(formDate);
+        new DateInput(el, getDriver()).set(text);
     }
 
     private void setHtml5NumberInput(WebElement el, String text)
     {
-
-        el.clear();
-
-        // Calling clear on the element doesn't reliably clear the field, if it fails try the hack.
-        String valueAsNumber = el.getAttribute("valueAsNumber").trim().toLowerCase();
-        if(!valueAsNumber.equals("nan"))
-        {
-
-            int length = valueAsNumber.length();
-
-            el.click();
-
-            // Not really sure where the cursor is in relation to the text so LEFT_ARROW until we are at the start.
-            for(int i = 0; i < length; i++)
-            {
-                el.sendKeys(Keys.ARROW_LEFT);
-            }
-
-            // Now delete all of the characters.
-            for(int i = 0; i < length; i++)
-            {
-                el.sendKeys(Keys.DELETE);
-            }
-
-        }
-
-        // Sometimes focus is lost before the value is set, so make sure the element has focus.
-        el.click();
-
-        el.sendKeys(text);
+        new NumberInput(el, getDriver()).set(text);
     }
 
     /**

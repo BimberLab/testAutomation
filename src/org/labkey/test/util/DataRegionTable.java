@@ -54,8 +54,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.labkey.test.Locator.tagWithAttribute;
 import static org.labkey.test.WebDriverWrapper.WAIT_FOR_JAVASCRIPT;
@@ -457,7 +457,7 @@ public class DataRegionTable extends DataRegion
         if (i < 0)
         {
             List<String> columnLabelsWithoutSpaces = new ArrayList<>(getColumnLabels().size());
-            getColumnLabels().stream().forEach(s -> columnLabelsWithoutSpaces.add(s.replace(" ", "")));
+            getColumnLabels().forEach(s -> columnLabelsWithoutSpaces.add(s.replace(" ", "")));
             i = columnLabelsWithoutSpaces.indexOf(name.replace(" ", ""));
             if (i >= 0)
             {
@@ -699,12 +699,9 @@ public class DataRegionTable extends DataRegion
     {
         WebElement cell = findCell(row, column); // Will clear cache if needed
 
-        if (_dataCache.get(row) == null)
-            _dataCache.put(row, new TreeMap<>());
-        if (_dataCache.get(row).get(column) == null)
-            _dataCache.get(row).put(column, cell.getText());
-
-        return _dataCache.get(row).get(column);
+        return _dataCache
+                .computeIfAbsent(row, k -> new TreeMap<>())
+                .computeIfAbsent(column, k -> cell.getText());
     }
 
     public String getDataAsText(int row, String columnName)
@@ -1017,7 +1014,7 @@ public class DataRegionTable extends DataRegion
             }
             else
             {
-                Window removeError = new Window("Error", getDriver());
+                Window<?> removeError = new Window<>("Error", getDriver());
                 assertTrue(removeError.getBody().contains("You must select at least one field to display in the grid."));
                 removeError.clickButton("OK", true);
             }
@@ -1516,7 +1513,7 @@ public class DataRegionTable extends DataRegion
         private List<WebElement> summaryStatCells;
         private final WebElement toggleHeaderCell = Locator.tag("th").withClasses("labkey-column-header", "labkey-selectors").findWhenNeeded(columnHeaderRow);
         private final WebElement toggleAllOnPage = Locator.input(".toggle").findWhenNeeded(toggleHeaderCell); // tri-state checkbox
-        private SelectorMenu selectionMenu = new SelectorMenu(toggleHeaderCell);
+        private final SelectorMenu selectionMenu = new SelectorMenu(toggleHeaderCell);
 
         protected List<WebElement> getDataRows()
         {
@@ -1601,13 +1598,10 @@ public class DataRegionTable extends DataRegion
 
         protected WebElement getColumnHeader(String colName)
         {
-            if (!columnHeadersByName.containsKey(colName))
-            {
-                columnHeadersByName.put(colName, Locator.findAnyElement("Column header named " + colName, this,
-                        Locators.columnHeader(getDataRegionName(), colName),
-                        Locators.columnHeader(getDataRegionName(), colName.toLowerCase())));
-            }
-            return columnHeadersByName.get(colName);
+            return columnHeadersByName.computeIfAbsent(colName, k ->
+                    Locator.findAnyElement("Column header named " + colName, this,
+                            Locators.columnHeader(getDataRegionName(), colName),
+                            Locators.columnHeader(getDataRegionName(), colName.toLowerCase())));
         }
 
         protected List<WebElement> getColumnHeaders()

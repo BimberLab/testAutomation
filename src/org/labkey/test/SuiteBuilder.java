@@ -41,10 +41,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class SuiteBuilder
 {
@@ -202,21 +202,18 @@ public class SuiteBuilder
         for (File suiteDir : suitesDirs)
         {
             File[] suiteFiles = suiteDir.listFiles(file -> !file.getName().startsWith("_") && file.getName().endsWith(".txt"));
-            for (File suiteFile : suiteFiles)
+            for (File suiteFile : Objects.requireNonNull(suiteFiles))
             {
                 String suiteName = suiteFile.getName().split("\\.")[0]; // drop file extension
                 List<String> testList = Arrays.stream(TestFileUtils.getFileContents(suiteFile).trim().split("\\s+"))
-                    .filter(testName -> !testName.startsWith("#")).collect(Collectors.toList());
+                        .filter(testName -> !testName.startsWith("#")).toList();
                 for (String testName : testList)
                 {
                     Class<?> testClass = _testsByName.get(testName);
                     if (testClass == null)
                     {
-                        if (!_missingTests.containsKey(suiteName))
-                        {
-                            _missingTests.put(suiteName, new ArrayList<>());
-                        }
-                        _missingTests.get(suiteName).add(testName);
+                        _missingTests.computeIfAbsent(suiteName, k -> new ArrayList<>())
+                                .add(testName);
                     }
                     else
                     {
@@ -229,10 +226,8 @@ public class SuiteBuilder
 
     private void addTestToSuite(Class<?> test, String suiteName)
     {
-        if (!_suites.containsKey(suiteName.toLowerCase()))
-            _suites.put(suiteName, new HashSet<>());
-
-        _suites.get(suiteName).add(test);
+        _suites.computeIfAbsent(suiteName, k -> new HashSet<>())
+                .add(test);
     }
 
     public Class<?> getTestByName(String testClassName)

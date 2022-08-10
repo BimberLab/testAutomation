@@ -106,7 +106,6 @@ public class GridBar extends WebDriverComponent<GridBar.ElementCache>
     /**
      * uses the pager to select a page from the pager dropdown list
      * @param page the text of the list item to be clicked
-     * @return
      */
     public GridBar jumpToPage(String page) // e.g. "First Page"|"Last Page"
     {
@@ -116,7 +115,6 @@ public class GridBar extends WebDriverComponent<GridBar.ElementCache>
 
     /**
      * gets the current page number
-     * @return
      */
     public int getCurrentPage()
     {
@@ -125,8 +123,6 @@ public class GridBar extends WebDriverComponent<GridBar.ElementCache>
 
     /**
      * selects the number of rows to be shown per page
-     * @param pageSize
-     * @return
      */
     public GridBar selectPageSize(String pageSize)
     {
@@ -164,7 +160,6 @@ public class GridBar extends WebDriverComponent<GridBar.ElementCache>
 
     /**
      * clicks the 'next' button on the pager associated with this grid and waits for the grid to update
-     * @return
      */
     public QueryGrid clickNext()
     {
@@ -174,7 +169,6 @@ public class GridBar extends WebDriverComponent<GridBar.ElementCache>
 
     /**
      * clicks the 'previous' button on the pager and waits for the grid to update
-     * @return
      */
     public QueryGrid clickPrevious()
     {
@@ -463,10 +457,8 @@ public class GridBar extends WebDriverComponent<GridBar.ElementCache>
         private final Map<String, MultiMenu> menus = new HashMap<>();
         protected MultiMenu findMenu(String buttonText)
         {
-            if (!menus.containsKey(buttonText))
-                menus.put(buttonText, new MultiMenu.MultiMenuFinder(getDriver()).withText(buttonText).find(this));
-
-            return menus.get(buttonText);
+            return menus.computeIfAbsent(buttonText, k ->
+                    new MultiMenu.MultiMenuFinder(getDriver()).withText(buttonText).find(this));
         }
 
         protected final BootstrapMenu aliquotView = BootstrapMenu.finder(getDriver()).locatedBy(

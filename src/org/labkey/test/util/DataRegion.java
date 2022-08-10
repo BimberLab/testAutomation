@@ -334,7 +334,7 @@ public abstract class DataRegion extends WebDriverComponent<DataRegion.ElementCa
         }
     }
 
-    public class ElementCache extends Component.ElementCache
+    public class ElementCache extends Component<?>.ElementCache
     {
         protected ElementCache()
         {
@@ -399,7 +399,7 @@ public abstract class DataRegion extends WebDriverComponent<DataRegion.ElementCa
             if (headerMenus == null)
                 headerMenus = new TreeMap<>();
 
-            if (!headerMenus.containsKey(text))
+            return headerMenus.computeIfAbsent(text, k ->
             {
                 WebElement menuEl = Locator.findAnyElement(
                         "menu with data-original-title " + text,
@@ -410,9 +410,8 @@ public abstract class DataRegion extends WebDriverComponent<DataRegion.ElementCa
                                 .withChild(Locator.tagWithAttribute("a", "data-original-title", text)),
                         Locator.tagWithClassContaining("div", "lk-menu-drop")
                                 .withChild(Locator.tagWithAttribute("a", "title", text)));
-                headerMenus.put(text, new BootstrapMenu(getDriver(), menuEl));
-            }
-            return headerMenus.get(text);
+                return new BootstrapMenu(getDriver(), menuEl);
+            });
         }
     }
 

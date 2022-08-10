@@ -27,7 +27,7 @@ import java.util.Map;
 
 public abstract class AbstractUserHelper
 {
-    private WebDriverWrapper _driverWrapper;
+    private final WebDriverWrapper _driverWrapper;
     protected static final Map<String, String> usersAndDisplayNames = new HashMap<>();
 
     protected AbstractUserHelper(WebDriverWrapper driverWrapper)
@@ -54,10 +54,7 @@ public abstract class AbstractUserHelper
     // assumes there are not collisions in the database causing unique numbers to be appended
     public String getDisplayNameForEmail(String email)
     {
-        if (usersAndDisplayNames.containsKey(email))
-            return usersAndDisplayNames.get(email);
-        else
-            return getDefaultDisplayName(email);
+        return usersAndDisplayNames.computeIfAbsent(email, k -> getDefaultDisplayName(email));
     }
 
     public static String getDefaultDisplayName(String email)

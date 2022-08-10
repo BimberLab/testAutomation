@@ -106,12 +106,8 @@ public class UpdateUserDetailsPage extends LabKeyPage<UpdateUserDetailsPage.Elem
 
         protected Input findInput(String fieldName)
         {
-            if (!formElements.containsKey(fieldName))
-            {
-                Input input = Input.Input(Locator.name("quf_" + fieldName), getDriver()).find();
-                formElements.put(fieldName, input);
-            }
-            return formElements.get(fieldName);
+            return formElements.computeIfAbsent(fieldName, k ->
+                    Input.Input(Locator.name("quf_" + fieldName), getDriver()).find());
         }
     }
 }

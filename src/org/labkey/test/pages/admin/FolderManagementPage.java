@@ -22,6 +22,7 @@ import org.labkey.test.pages.LabKeyPage;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -110,9 +111,9 @@ public class FolderManagementPage extends LabKeyPage<FolderManagementPage.Elemen
         T tab;
         try
         {
-            tab = tabClass.newInstance();
+            tab = tabClass.getDeclaredConstructor().newInstance();
         }
-        catch (InstantiationException | IllegalAccessException e)
+        catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
         {
             throw new RuntimeException("Unable to instantiate page class: " + tabClass.getName(), e);
         }
@@ -154,7 +155,7 @@ public class FolderManagementPage extends LabKeyPage<FolderManagementPage.Elemen
         return new ElementCache();
     }
 
-    protected class ElementCache extends LabKeyPage.ElementCache
+    protected class ElementCache extends LabKeyPage<?>.ElementCache
     {
         private final Map<String, WebElement> tabs = new HashMap<>();
         private final Map<String, WebElement> tabLinks = new HashMap<>();
@@ -166,16 +167,14 @@ public class FolderManagementPage extends LabKeyPage<FolderManagementPage.Elemen
 
         public WebElement findTab(String tabId)
         {
-            if (!tabs.containsKey(tabId))
-                tabs.put(tabId, Locators.folderManagementTab(tabId).waitForElement(this, WAIT_FOR_JAVASCRIPT));
-            return tabs.get(tabId);
+            return tabs.computeIfAbsent(tabId, k ->
+                    Locators.folderManagementTab(tabId).waitForElement(this, WAIT_FOR_JAVASCRIPT));
         }
 
         public WebElement findTabLink(String tabId)
         {
-            if (!tabLinks.containsKey(tabId))
-                tabLinks.put(tabId, Locators.folderManagementTabLink(tabId).findElement(this));
-            return tabLinks.get(tabId);
+            return tabLinks.computeIfAbsent(tabId, k ->
+                    Locators.folderManagementTabLink(tabId).findElement(this));
         }
     }
 

@@ -37,9 +37,10 @@ import org.labkey.test.categories.Daily;
 import org.labkey.test.categories.Data;
 import org.labkey.test.pages.ImportDataPage;
 import org.labkey.test.params.FieldDefinition;
+import org.labkey.test.params.FieldDefinition.ColumnType;
 import org.labkey.test.params.experiment.DataClassDefinition;
+import org.labkey.test.params.list.IntListDefinition;
 import org.labkey.test.util.DataRegionTable;
-import org.labkey.test.util.ListHelper;
 import org.labkey.test.util.Maps;
 import org.labkey.test.util.PortalHelper;
 import org.openqa.selenium.Alert;
@@ -139,8 +140,7 @@ public class TriggerScriptTest extends BaseWebDriverTest
         public static EmployeeRecord fromMap(Map<String, Object> map)
         {
             EmployeeRecord newbie = new EmployeeRecord((String)map.get("Name"), (String)map.get("ssn"), (String)map.get("Company"));
-            if (map.containsKey("Key"))
-                newbie.key = (Long)map.get("Key");
+            newbie.key = (Long)map.get("Key");
 
             return newbie;
         }
@@ -166,37 +166,38 @@ public class TriggerScriptTest extends BaseWebDriverTest
         init.doSetup();
     }
 
-    protected void doSetup()
+    protected void doSetup() throws Exception
     {
         _containerHelper.createProject(getProjectName(), null);
-        _containerHelper.enableModule(getProjectName(), "Query");
-        _containerHelper.enableModule(getProjectName(), SIMPLE_MODULE);
-        _containerHelper.enableModule(getProjectName(), TRIGGER_MODULE);
+        _containerHelper.enableModules(List.of("Query", SIMPLE_MODULE, TRIGGER_MODULE));
+
+        Connection conn = createDefaultConnection();
 
         //create List
-        FieldDefinition[] columns = new FieldDefinition[] {
-                new ListHelper.ListColumn("name", "Name", ListHelper.ListColumnType.String, ""),
-                new ListHelper.ListColumn("ssn","SSN", ListHelper.ListColumnType.String,""),
-                new ListHelper.ListColumn("company","Company",ListHelper.ListColumnType.String,"")
-
-        };
-
-        _listHelper.createList(getProjectName(), LIST_NAME, ListHelper.ListColumnType.AutoInteger, "Key", columns );
+        new IntListDefinition(LIST_NAME, "Key")
+                .setFields(List.of(
+                        new FieldDefinition("name", ColumnType.String).setLabel("Name"),
+                        new FieldDefinition("ssn", ColumnType.String).setLabel("SSN"),
+                        new FieldDefinition("company", ColumnType.String).setLabel("Company")))
+                .create(conn, getProjectName());
 
         log("Create list in subfolder to prevent query validation failure");
-        _listHelper.createList(getProjectName(), "People",
-                ListHelper.ListColumnType.AutoInteger, "Key",
-                new ListHelper.ListColumn("Name", "Name", ListHelper.ListColumnType.String, "Name"),
-                new ListHelper.ListColumn("Age", "Age", ListHelper.ListColumnType.Integer, "Age"),
-                new ListHelper.ListColumn("Crazy", "Crazy", ListHelper.ListColumnType.Boolean, "Crazy?"));
+        new IntListDefinition("People", "Key")
+                .setFields(List.of(
+                        new FieldDefinition("Name", ColumnType.String).setDescription("Name"),
+                        new FieldDefinition("Age", ColumnType.Integer).setDescription("Age"),
+                        new FieldDefinition("Crazy", ColumnType.Boolean).setDescription("Crazy?")))
+                .create(conn, getProjectName());
 
         importFolderFromZip(TestFileUtils.getSampleData("studies/LabkeyDemoStudy.zip"));
 
         //Setup Data Class
         goToProjectHome();
 
-        _portalHelper.addWebPart("Datasets");
-        _portalHelper.addWebPart("Data Classes");
+        _portalHelper.doInAdminMode(ph -> {
+            _portalHelper.addWebPart("Datasets");
+            _portalHelper.addWebPart("Data Classes");
+        });
     }
 
     @Before
@@ -247,7 +248,8 @@ public class TriggerScriptTest extends BaseWebDriverTest
         step = "BeforeUpdate";
         log("** " + testName + " " + step + " Event");
         changedBefore.name = "Emp 3";
-        _listHelper.updateRow(1, changedBefore.toStringMap());
+        new DataRegionTable("query", getDriver())
+                .updateRow(0, changedBefore.toStringMap());
         assertTextPresent(BEFORE_UPDATE_COMPANY);
 
         //Check AfterDelete Event
@@ -673,7 +675,7 @@ public class TriggerScriptTest extends BaseWebDriverTest
     private void insertSingleRowViaUI(String dataRegionName, Map<String,String> record)
     {
         DataRegionTable.DataRegion(getDriver()).withName(dataRegionName).find().clickInsertNewRow();
-        record.entrySet().forEach((entry) -> setFormElement( Locator.xpath("//*[@name='quf_"+ entry.getKey() + "']"), entry.getValue()));
+        record.forEach((key, value) -> setFormElement(Locator.xpath("//*[@name='quf_" + key + "']"), value));
         clickButton("Submit");
     }
 
@@ -707,9 +709,7 @@ public class TriggerScriptTest extends BaseWebDriverTest
     public void updateDataSetRow(int id, String tableName, Map<String, String> data)
     {
         DataRegionTable dr = new DataRegionTable(tableName, this);
-        this.clickAndWait(dr.updateLink(id - 1));
-        data.entrySet().forEach((entry) -> setFormElement( Locator.xpath("//*[@name='quf_"+ entry.getKey() + "']"), entry.getValue()));
-        clickButton("Submit");
+        dr.updateRow(id, data);
     }
 
     /**
@@ -737,7 +737,6 @@ public class TriggerScriptTest extends BaseWebDriverTest
 
     /**
      * Navigate to particular Dataset
-     * @param datasetName
      */
     private void goToDataset(String datasetName)
     {
@@ -747,7 +746,6 @@ public class TriggerScriptTest extends BaseWebDriverTest
 
     /**
      * Navigate to particular Dataset
-     * @param dataClassName
      */
     private void goToDataClass(String dataClassName)
     {
@@ -758,9 +756,6 @@ public class TriggerScriptTest extends BaseWebDriverTest
 
     /**
      * Generate delimited string of keys from a map
-     * @param data
-     * @param delimiter
-     * @return
      */
     private String joinMapValues(Map<String,String> data, String delimiter )
     {
@@ -771,9 +766,6 @@ public class TriggerScriptTest extends BaseWebDriverTest
 
     /**
      * Generate delimited string of keys from a map
-     * @param data
-     * @param delimiter
-     * @return
      */
     private String joinMapKeys(Map<String,String> data, String delimiter )
     {
@@ -800,8 +792,8 @@ public class TriggerScriptTest extends BaseWebDriverTest
 
         DataClassDefinition dataClass = new DataClassDefinition(DATA_CLASSES_NAME)
                 .setFields(List.of(
-                        new FieldDefinition(COMMENTS_FIELD, FieldDefinition.ColumnType.String),
-                        new FieldDefinition(COUNTRY_FIELD, FieldDefinition.ColumnType.String)));
+                        new FieldDefinition(COMMENTS_FIELD, ColumnType.String),
+                        new FieldDefinition(COUNTRY_FIELD, ColumnType.String)));
         dataClass.create(createDefaultConnection(), getProjectName());
     }
 }

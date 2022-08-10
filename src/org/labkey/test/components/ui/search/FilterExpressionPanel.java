@@ -123,14 +123,8 @@ public class FilterExpressionPanel extends WebDriverComponent<FilterExpressionPa
 
     private void setFilterType(int index, Operator operator)
     {
-        if (filterTypesLabelOverrides.containsKey(operator))
-        {
-            elementCache().filterTypeSelects.get(index).select(filterTypesLabelOverrides.get(operator));
-        }
-        else
-        {
-            elementCache().filterTypeSelects.get(index).select(operator.getDisplayValue());
-        }
+        elementCache().filterTypeSelects.get(index)
+                .select(filterTypesLabelOverrides.getOrDefault(operator, operator.getDisplayValue()));
     }
 
     @Override

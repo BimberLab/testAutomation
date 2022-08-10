@@ -76,16 +76,7 @@ public class TeamCityUtils
 
     private static Number storeAggregatedBuildStatistic(String key, Number value)
     {
-        final List<Number> statisticValues;
-        if (buildStatistics.containsKey(key))
-        {
-            statisticValues = buildStatistics.get(key);
-        }
-        else
-        {
-            statisticValues = new ArrayList<>();
-            buildStatistics.put(key, statisticValues);
-        }
+        final List<Number> statisticValues = buildStatistics.computeIfAbsent(key, k -> new ArrayList<>());
         statisticValues.add(value);
 
         return statisticValues.stream().mapToDouble(Number::doubleValue).sum() / statisticValues.size();
@@ -165,7 +156,7 @@ public class TeamCityUtils
             }
         }
         messageBuilder.append("]");
-        System.out.println(messageBuilder.toString());
+        System.out.println(messageBuilder);
     }
 
     public static void serviceMessage(String messageName, String value)

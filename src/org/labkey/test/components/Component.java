@@ -103,13 +103,13 @@ public abstract class Component<EC extends Component.ElementCache> implements Se
         }
 
         @Override
-        public List<WebElement> findElements(By by)
+        public final List<WebElement> findElements(By by)
         {
             return getComponentElement().findElements(by);
         }
 
         @Override
-        public WebElement findElement(By by)
+        public final WebElement findElement(By by)
         {
             return getComponentElement().findElement(by);
         }
@@ -289,6 +289,22 @@ public abstract class Component<EC extends Component.ElementCache> implements Se
         protected Locator locator()
         {
             return _locator;
+        }
+    }
+
+    public static abstract class Simple extends Component<Component<?>.ElementCache>
+    {
+        @Override
+        protected final Component<?>.ElementCache elementCache()
+        {
+            return newElementCache();
+        }
+
+        @Override
+        protected final Component<?>.ElementCache newElementCache()
+        {
+            throw new UnsupportedOperationException(
+                    String.format("No element cache in %s. Refactor component.", getClass().getName()));
         }
     }
 }

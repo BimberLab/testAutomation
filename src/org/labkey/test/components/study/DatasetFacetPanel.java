@@ -95,7 +95,7 @@ public class DatasetFacetPanel extends Component<DatasetFacetPanel.Elements>
         return new Elements();
     }
 
-    public class Elements extends Component.ElementCache
+    public class Elements extends Component<?>.ElementCache
     {
         Map<String, Map<Integer, GroupRow>> groupRows = new HashMap<>();
         Map<String, Map<Integer, CategoryRow>> categoryRows = new HashMap<>();
@@ -105,24 +105,21 @@ public class DatasetFacetPanel extends Component<DatasetFacetPanel.Elements>
         {
             if ("All".equals(label))
                 index++; // 'All' looks like a group row, but skip it if you're looking for a group named 'All'
-            if (!groupRows.containsKey(label))
-                groupRows.put(label, new HashMap<>());
-            if (!groupRows.get(label).containsKey(index))
-                groupRows.get(label).put(index, new GroupRow(label, index));
-            return groupRows.get(label).get(index);
+
+            return groupRows
+                    .computeIfAbsent(label, l -> new HashMap<>())
+                    .computeIfAbsent(index, i -> new GroupRow(label, i));
         }
 
         protected CategoryRow getCategoryRow(String label, int index)
         {
-            if (!categoryRows.containsKey(label))
-                categoryRows.put(label, new HashMap<>());
-            if (!categoryRows.get(label).containsKey(index))
-                categoryRows.get(label).put(index, new CategoryRow(label, index));
-            return categoryRows.get(label).get(index);
+            return categoryRows
+                    .computeIfAbsent(label, l -> new HashMap<>())
+                    .computeIfAbsent(index, i -> new CategoryRow(label, i));
         }
     }
 
-    private class GroupRow extends Component
+    private class GroupRow extends Component.Simple
     {
         final private WebElement _row;
         final private WebElement _label;

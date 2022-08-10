@@ -142,4 +142,20 @@ public abstract class WebDriverComponent<EC extends Component.ElementCache> exte
             return _factory.apply(el, driver);
         }
     }
+
+    public static abstract class Simple extends WebDriverComponent<Component<?>.ElementCache>
+    {
+        @Override
+        protected final Component<?>.ElementCache elementCache()
+        {
+            return newElementCache();
+        }
+
+        @Override
+        protected final Component<?>.ElementCache newElementCache()
+        {
+            throw new UnsupportedOperationException(
+                    String.format("No element cache in %s. Refactor component.", getClass().getName()));
+        }
+    }
 }

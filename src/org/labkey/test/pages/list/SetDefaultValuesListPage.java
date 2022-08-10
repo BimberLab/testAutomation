@@ -72,18 +72,16 @@ public class SetDefaultValuesListPage extends LabKeyPage<SetDefaultValuesListPag
         return new ElementCache();
     }
 
-    protected class ElementCache extends LabKeyPage.ElementCache
+    protected class ElementCache extends LabKeyPage<?>.ElementCache
     {
-        private Map<String, FormItem> formItems = new HashMap<>();
+        private final Map<String, FormItem<?>> formItems = new HashMap<>();
         protected WebElement saveButton = Locator.lkButton("Save Defaults").findWhenNeeded(this);
         protected WebElement clearButton = Locator.lkButton("Clear Defaults").findWhenNeeded(this);
         protected WebElement cancelButton = Locator.lkButton("Cancel").findWhenNeeded(this);
 
         public FormItem getFormItem(String fieldLabel)
         {
-            if (!formItems.containsKey(fieldLabel))
-                formItems.put(fieldLabel, FormItem(getDriver()).withLabel(fieldLabel).find(this));
-            return formItems.get(fieldLabel);
+            return formItems.computeIfAbsent(fieldLabel, k -> FormItem(getDriver()).withLabel(fieldLabel).find(this));
         }
     }
 }

@@ -16,7 +16,7 @@ import java.util.Map;
 
 /**
  * Controls 'Tabs' and 'Tab' components from 'react-bootstrap'
- *
+ * <br>
  * Corresponding application code looks something like:
  * <pre>{@code
  * <Tabs id="panel-tabs" >
@@ -111,21 +111,18 @@ public class Tabs extends WebDriverComponent<Tabs.ElementCache>
 
         WebElement findTab(String tabText)
         {
-            if (!tabMap.containsKey(tabText))
+            return tabMap.computeIfAbsent(tabText, k ->
             {
-                WebElement tabEl;
                 try
                 {
-                    tabEl = tabLoc.withText(tabText).findElement(tabList);
+                    return tabLoc.withText(tabText).findElement(tabList);
                 }
                 catch (NoSuchElementException ex)
                 {
                     throw new NoSuchElementException(String.format("'%s' not among available tabs: %s",
                             tabText, getWrapper().getTexts(findAllTabs())), ex);
                 }
-                tabMap.put(tabText, tabEl);
-            }
-            return tabMap.get(tabText);
+            });
         }
 
         // Tab panels can be updated and changed when flipping between tabs. Don't persist the panel element find it each time.

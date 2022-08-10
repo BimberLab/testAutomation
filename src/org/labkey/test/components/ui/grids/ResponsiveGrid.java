@@ -14,7 +14,6 @@ import org.labkey.test.components.UpdatingComponent;
 import org.labkey.test.components.WebDriverComponent;
 import org.labkey.test.components.react.ReactCheckBox;
 import org.labkey.test.components.ui.search.FilterExpressionPanel;
-import org.openqa.selenium.ElementNotInteractableException;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.NotFoundException;
 import org.openqa.selenium.WebDriver;
@@ -36,7 +35,7 @@ import static org.labkey.test.BaseWebDriverTest.WAIT_FOR_JAVASCRIPT;
 import static org.labkey.test.WebDriverWrapper.sleep;
 import static org.labkey.test.WebDriverWrapper.waitFor;
 
-public class ResponsiveGrid<T extends ResponsiveGrid> extends WebDriverComponent<ResponsiveGrid<T>.ElementCache> implements UpdatingComponent
+public class ResponsiveGrid<T extends ResponsiveGrid<T>> extends WebDriverComponent<ResponsiveGrid<T>.ElementCache> implements UpdatingComponent
 {
     final WebElement _gridElement;
     final WebDriver _driver;
@@ -651,13 +650,8 @@ public class ResponsiveGrid<T extends ResponsiveGrid> extends WebDriverComponent
         private final Map<String, WebElement> headerCells = new HashMap<>();
         protected final WebElement getColumnHeaderCell(String headerText)
         {
-            if (!headerCells.containsKey(headerText))
-            {
-                WebElement headerCell = Locator.tagWithClass("th", "grid-header-cell")
-                        .withChild(Locator.tag("span").startsWith(headerText)).findElement(this);
-                headerCells.put(headerText, headerCell);
-            }
-            return headerCells.get(headerText);
+            return headerCells.computeIfAbsent(headerText, k -> Locator.tagWithClass("th", "grid-header-cell")
+                    .withChild(Locator.tag("span").startsWith(headerText)).findElement(this));
         }
 
         protected List<String> columnNames;
@@ -787,7 +781,7 @@ public class ResponsiveGrid<T extends ResponsiveGrid> extends WebDriverComponent
 
     }
 
-    public static class ResponsiveGridFinder extends WebDriverComponentFinder<ResponsiveGrid, ResponsiveGridFinder>
+    public static class ResponsiveGridFinder extends WebDriverComponentFinder<ResponsiveGrid<?>, ResponsiveGridFinder>
     {
         private Locator _locator;
 

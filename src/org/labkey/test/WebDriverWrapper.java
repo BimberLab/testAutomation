@@ -35,7 +35,6 @@ import org.labkey.remoteapi.security.WhoAmIResponse;
 import org.labkey.test.components.html.BootstrapMenu;
 import org.labkey.test.components.html.RadioButton;
 import org.labkey.test.components.html.SiteNavBar;
-import org.labkey.test.components.labkey.LabKeyAlert;
 import org.labkey.test.pages.admin.FolderManagementPage;
 import org.labkey.test.pages.admin.PermissionsPage;
 import org.labkey.test.pages.assay.AssayBeginPage;
@@ -370,7 +369,7 @@ public abstract class WebDriverWrapper implements WrapsDriver
                     {
                         try
                         {
-                            retry.printStackTrace(System.err);
+                            TestLogger.warn("Failed to start FirefoxDriver. Retrying.", retry);
                             newDriverService.stop();
                             newDriverService = GeckoDriverService.createDefaultService();
                             sleep(10000);
@@ -1391,14 +1390,6 @@ public abstract class WebDriverWrapper implements WrapsDriver
         clickButton(buttonToClick, 0);
     }
 
-    public String acceptModalAlert()
-    {
-        Alert alert = new LabKeyAlert(getDriver());
-        String bodyText = alert.getText();
-        alert.accept();
-        return bodyText;
-    }
-
     public enum SeleniumEvent
     {blur,change,mousedown,mouseup,click,reset,select,submit,abort,error,load,mouseout,mouseover,unload,keyup,focus}
 
@@ -2181,9 +2172,7 @@ public abstract class WebDriverWrapper implements WrapsDriver
 
     public File downloadFromUrl(String url)
     {
-        return doAndWaitForDownload(() -> {
-            executeScript("document.location = arguments[0]", url);
-        });
+        return doAndWaitForDownload(() -> executeScript("document.location = arguments[0]", url));
     }
 
     // Pattern matcher for UUID
@@ -2726,10 +2715,7 @@ public abstract class WebDriverWrapper implements WrapsDriver
 
     public void clickAndWait(final WebElement el, int pageTimeoutMs)
     {
-        doAndWaitForPageToLoad(() ->
-        {
-            el.click();
-        }, pageTimeoutMs);
+        doAndWaitForPageToLoad(el::click, pageTimeoutMs);
 
         if(pageTimeoutMs==WAIT_FOR_EXT_MASK_TO_APPEAR)
             _extHelper.waitForExt3Mask(WAIT_FOR_JAVASCRIPT);

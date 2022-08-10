@@ -126,11 +126,7 @@ public class UpdateQueryRowPage extends LabKeyPage<UpdateQueryRowPage.ElementCac
 
         WebElement findField(String name)
         {
-            if (!fieldMap.containsKey(name))
-            {
-                fieldMap.put(name, Locator.name("quf_" + name).findElement(this));
-            }
-            return fieldMap.get(name);
+            return fieldMap.computeIfAbsent(name, k -> Locator.name("quf_" + name).findElement(this));
         }
 
         final WebElement submitButton = Locator.lkButton("Submit").findWhenNeeded(this);

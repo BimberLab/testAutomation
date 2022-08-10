@@ -122,22 +122,18 @@ public class SearchPanel extends WebDriverComponent<SearchPanel.ElementCache>
         return new ElementCache();
     }
 
-    protected class ElementCache extends Component.ElementCache
+    protected class ElementCache extends Component<?>.ElementCache
     {
         private final Map<String, SearchPanelFilterRow> filterRows = new TreeMap<>();
         protected SearchPanelFilterRow findFilterRow(String label)
         {
-            if (!filterRows.containsKey(label))
-                filterRows.put(label, new SearchPanelFilterRow(label));
-            return filterRows.get(label);
+            return filterRows.computeIfAbsent(label, SearchPanelFilterRow::new);
         }
 
         private final Map<String, SearchPanelFacetedRow> facetedRows = new TreeMap<>();
         protected SearchPanelFacetedRow findFacetedRow(String label)
         {
-            if (!facetedRows.containsKey(label))
-                facetedRows.put(label, new SearchPanelFacetedRow(label));
-            return facetedRows.get(label);
+            return facetedRows.computeIfAbsent(label, SearchPanelFacetedRow::new);
         }
 
         protected final ComboBox viewCombo = ComboBox(getDriver()).locatedBy(Locator.tag("table").attributeStartsWith("id", "labkey-viewcombo")).findWhenNeeded(this);
@@ -147,7 +143,7 @@ public class SearchPanel extends WebDriverComponent<SearchPanel.ElementCache>
 
     private static final Locator.XPathLocator rowLoc = Locator.tagWithClass("div", "search-panel-row");
     private static final Locator.XPathLocator rowLabelLoc = Locator.tagWithClass("div", "search-panel-row-label");
-    protected abstract class SearchPanelRow extends Component
+    protected abstract class SearchPanelRow extends Component.Simple
     {
         private final WebElement row;
         private final String label;

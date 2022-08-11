@@ -23,12 +23,15 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.jetbrains.annotations.NotNull;
 import org.labkey.remoteapi.collections.CaseInsensitiveHashMap;
 import org.labkey.test.BaseWebDriverTest;
@@ -831,7 +834,7 @@ public class Crawler
     @LogMethod
     public void validatePage(@LoggedParam String url)
     {
-        crawlLink(new UrlToCheck(null, url, -1));
+        crawlLink(new UrlToCheck(null, url, 0));
     }
 
     /**
@@ -953,7 +956,8 @@ public class Crawler
         _urlsChecked.add(stripQueryParams(relativeURL));
         URL origin = urlToCheck.getOrigin();
         int depth = urlToCheck.getDepth();
-        String originMessage = origin != null ? "\nOriginating page: " + origin : "";
+        String originMessage = (origin != null ? "\nOriginating page: " + origin : "") +
+                "\nTarget Page: " + relativeURL;
 
         try
         {
@@ -970,6 +974,10 @@ public class Crawler
             if (navigated) // These checks were already performed if navigation didn't occur
             {
                 actualUrl = _test.getURL();
+                if (!actualUrl.toString().endsWith(relativeURL))
+                {
+                    originMessage = originMessage + "\nRedirected to: " + actualUrl;
+                }
 
                 int code = _test.getResponseCode();
 
@@ -1018,7 +1026,24 @@ public class Crawler
 
                     if (depth >= 0 && !_terminalActions.contains(actionId)) // Negative depth indicates a one-off check
                     {
-                        List<String> linkAddresses = _test.getLinkAddresses();
+                        List<Pair<String, Map<String, String>>> linksWithAttributes = _test.getLinkAddresses();
+                        for (Pair<String, Map<String, String>> linkWithAttributes : linksWithAttributes)
+                        {
+                            String href = linkWithAttributes.getLeft();
+                            if (href.contains("://") && !href.startsWith(WebTestHelper.getBaseURL())) // Remote URL
+                            {
+                                Map<String, String> attributes = linkWithAttributes.getRight();
+                                String target = StringUtils.trimToEmpty(attributes.get("target"));
+                                List<String> rel = Arrays.asList(StringUtils.trimToEmpty(attributes.get("rel")).split(" +"));
+                                if (target.equals("_blank"))
+                                {
+                                    // Issue 40708: Create automated tests to look for anchor tags with link to an outside server
+                                    MatcherAssert.assertThat(String.format("Bad 'rel' attribute for link to %s. On Page: %s", href, actualUrl),
+                                            rel, CoreMatchers.hasItems("noopener", "noreferrer"));
+                                }
+                            }
+                        }
+                        List<String> linkAddresses = linksWithAttributes.stream().map(Pair::getLeft).collect(Collectors.toList());
                         List<String> formAddresses = _test.getFormAddresses();
                         linkAddresses.addAll(formAddresses);
 
@@ -1082,7 +1107,7 @@ public class Crawler
             throw new RuntimeException(e);
         }
 
-        if (actualUrl != null && urlToCheck.isInjectableURL() && _injectionCheckEnabled)
+        if (urlToCheck.isInjectableURL() && _injectionCheckEnabled)
         {
             TestLogger.increaseIndent();
             try
@@ -1362,7 +1387,7 @@ public class Crawler
         {
             List<String> additionalParams = new ArrayList<>(_dictionary.keySet());
             additionalParams.removeAll(_parametersInjected.get(actionId)); // Don't repeat injection attempts
-            additionalParams.removeAll(in.stream().map(Map.Entry::getKey).collect(Collectors.toList())); // Don't add duplicate params
+            additionalParams.removeAll(in.stream().map(Map.Entry::getKey).toList()); // Don't add duplicate params
             Collections.shuffle(additionalParams);
 
             for (int i = 0; i < additionalParams.size() && ret.size() < 10; i++)
